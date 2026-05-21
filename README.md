@@ -4,6 +4,8 @@ Sync Confluence pages into your Obsidian Vault as Markdown files.
 
 Works with both **Confluence Cloud** (Basic auth) and **Confluence Data Center / Server** (Bearer token).
 
+한국어 README: [README.ko.md](README.ko.md)
+
 ---
 
 ## Features
