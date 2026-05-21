@@ -10,7 +10,7 @@ export class ConfluenceClient {
 
   authHeader(): string {
     if (this.settings.authMode === 'basic') {
-      const creds = btoa(`${this.settings.email}:${this.settings.token}`);
+      const creds = Buffer.from(`${this.settings.email}:${this.settings.token}`).toString('base64');
       return `Basic ${creds}`;
     }
     return `Bearer ${this.settings.token}`;
