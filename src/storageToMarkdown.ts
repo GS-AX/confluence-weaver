@@ -10,6 +10,8 @@
 export interface ConvertOptions {
   /** Replace <ac:link> with Obsidian [[wiki-link]]. Default: true */
   wikiLinks?: boolean;
+  /** Maps attachment filename → vault-relative path for local image embeds */
+  attachmentMap?: Map<string, string>;
 }
 
 export function storageToMarkdown(html: string, options: ConvertOptions = {}): string {
@@ -105,10 +107,13 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
     }
   );
 
-  // Attachment image
+  // Attachment image — use local vault path if downloaded, otherwise filename fallback
   s = s.replace(
     /<ac:image[^>]*>\s*<ri:attachment[^>]*\bri:filename="([^"]*)"[^>]*\/?>\s*<\/ac:image>/gi,
-    (_m, filename) => `![${filename}](${filename})`
+    (_m, filename) => {
+      const vaultPath = options.attachmentMap?.get(filename);
+      return vaultPath ? `![[${vaultPath}]]` : `![${filename}](${filename})`;
+    }
   );
 
   // External URL image

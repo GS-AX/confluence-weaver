@@ -7,6 +7,13 @@ export interface CqlProfile {
   enabled: boolean;
 }
 
+export interface ConfluenceAttachment {
+  id: string;
+  title: string;
+  metadata: { mediaType: string };
+  _links: { download: string };
+}
+
 export interface FieldMapping {
   /** Dot-notation path into the Confluence page JSON, e.g. "space.key" */
   sourcePath: string;
@@ -27,6 +34,7 @@ export interface ConfluenceWeaverSettings {
   maxBodyLength: number;
   wikiLinks: boolean;
   fieldMappings: FieldMapping[];
+  downloadAttachments: boolean;
 }
 
 export interface ConfluencePage {

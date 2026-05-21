@@ -219,6 +219,18 @@ export class ConfluenceWeaverSettingTab extends PluginSettingTab {
           })
       );
 
+    new Setting(containerEl)
+      .setName(t('setting.downloadAttachments'))
+      .setDesc(t('setting.downloadAttachments.desc'))
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.downloadAttachments)
+          .onChange(async v => {
+            this.plugin.settings.downloadAttachments = v;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // ── Advanced ─────────────────────────────────────────────────
     containerEl.createEl('h3', { text: t('setting.advanced') });
 

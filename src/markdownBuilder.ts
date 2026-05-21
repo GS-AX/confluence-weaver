@@ -5,10 +5,11 @@ import { storageToMarkdown } from './storageToMarkdown';
 export function buildMarkdown(
   page: ConfluencePage,
   settings: ConfluenceWeaverSettings,
-  existingContent?: string
+  existingContent?: string,
+  attachmentMap?: Map<string, string>
 ): string {
   const frontmatter = buildFrontmatter(page, settings);
-  const body = buildBody(page, settings);
+  const body = buildBody(page, settings, attachmentMap);
   const freshContent = `${frontmatter}\n${body}\n\n${SECTION_MARKER}\n`;
 
   if (!existingContent) return freshContent;
@@ -82,9 +83,14 @@ function buildFrontmatter(page: ConfluencePage, settings: ConfluenceWeaverSettin
   return lines.join('\n');
 }
 
-function buildBody(page: ConfluencePage, settings: ConfluenceWeaverSettings): string {
+function buildBody(
+  page: ConfluencePage,
+  settings: ConfluenceWeaverSettings,
+  attachmentMap?: Map<string, string>
+): string {
   let body = storageToMarkdown(page.body?.storage?.value ?? '', {
     wikiLinks: settings.wikiLinks,
+    attachmentMap,
   });
 
   if (settings.maxBodyLength > 0 && body.length > settings.maxBodyLength) {

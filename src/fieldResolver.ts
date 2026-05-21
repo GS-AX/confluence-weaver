@@ -13,8 +13,8 @@ export function yamlDate(isoString: string): string {
 
 export function slugify(text: string): string {
   return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
+    .replace(/[\\/:*?"<>|]/g, '')  // Windows 파일명 금지 문자 제거
+    .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '');
 }

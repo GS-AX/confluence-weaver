@@ -10,17 +10,20 @@ English README: [README.md](README.md)
 
 ## 주요 기능
 
-- **CQL 프로파일** — Confluence Query Language 쿼리를 여러 개 정의하고, 각각 다른 Vault 폴더로 저장
+- **CQL 프로파일** — CQL 쿼리를 여러 개 정의하고 각각 다른 Vault 폴더로 저장
+- **URL로 페이지 불러오기** — Confluence 페이지 URL을 직접 입력해 즉시 가져오기, 하위 페이지 일괄 수집 지원
 - **증분 동기화** — 버전이 변경된 페이지만 업데이트, 변경 없는 페이지는 건너뜀
 - **Storage Format → Markdown** — 제목, 단락, 표, 코드블록, 태스크 리스트, 알림 패널 등 변환
-- **Frontmatter** — 모든 페이지에 `confluence_id`, `confluence_url`, `title`, `space`, `author`, `created`, `updated`, `version`, `labels` 자동 삽입
-- **사용자 노트 보호** — 섹션 마커 아래에 작성한 내용은 재동기화 시에도 보존
+- **이미지 자동 다운로드** — 첨부 이미지를 `_attachments/{pageId}/` 폴더에 저장 후 로컬 임베드
+- **Frontmatter** — `confluence_id`, `confluence_url`, `title`, `space`, `author`, `created`, `updated`, `version`, `labels` 자동 삽입
+- **사용자 노트 보호** — 섹션 마커 아래 작성한 내용은 재동기화 시에도 보존
 - **Wiki-link 변환** — Confluence 내부 링크를 Obsidian `[[wiki-link]]` 형식으로 변환 (옵션)
 - **폴더 계층 구조** — Confluence 상위 페이지를 폴더로 반영 (옵션)
-- **커스텀 필드 매핑** — dot-path로 Confluence 페이지 JSON의 임의 필드를 frontmatter 키로 매핑
+- **커스텀 필드 매핑** — dot-path로 Confluence 페이지 JSON 필드를 임의 frontmatter 키로 매핑
 - **Jira Weaver 연동** — Jira Weaver 파일 내 Confluence URL을 `[[wiki-link]]`로 자동 교체
 - **싱크 로그 패널** — 프로파일별 생성 / 업데이트 / 건너뜀 / 오류 카운트
 - **자동 싱크** — 시작 시 실행 및 N분 간격 반복 싱크 (1–1440분)
+- **4개국어 지원** — 한국어, 영어, 日本語, 简体中文
 
 ---
 
@@ -61,6 +64,44 @@ type = "page" AND creator = currentUser() AND lastModified >= startOfMonth()
 | `creator` | 작성자 |
 | `lastModified` | 마지막 수정일 |
 | `type` | `page` / `blogpost` |
+
+---
+
+## URL로 페이지 불러오기
+
+커맨드 팔레트에서 **URL로 페이지 불러오기** 실행 후 Confluence 페이지 URL을 붙여넣으면 해당 페이지를 즉시 가져옵니다.
+
+지원하는 URL 형식:
+
+```
+https://mycompany.atlassian.net/wiki/spaces/DEV/pages/123456/페이지-제목
+https://mycompany.atlassian.net/wiki/spaces/DEV/pages/123456
+https://confluence.internal/pages/viewpage.action?pageId=123456
+https://confluence.internal/display/DEV/페이지+제목
+```
+
+| 옵션 | 설명 |
+|---|---|
+| 하위 페이지 포함 | 직속 하위 페이지도 함께 가져오기 |
+| 모든 하위 페이지 (재귀) | 하위 트리 전체를 BFS로 수집 |
+| 최대 페이지 수 | 재귀 시 안전 제한 (기본 100) |
+
+---
+
+## 이미지 다운로드
+
+*설정 → 싱크 설정 → 이미지 다운로드* 를 켜면 싱크 시 첨부 이미지를 자동으로 Vault에 저장합니다.
+
+```
+Confluence/
+  123456_아키텍처-개요.md        ← ![[Confluence/_attachments/123456/diagram.png]]
+  _attachments/
+    123456/
+      diagram.png
+      flow-chart.svg
+```
+
+오프라인에서도 이미지가 표시되고, Confluence 접속 없이 완전한 문서를 열람할 수 있습니다.
 
 ---
 
@@ -132,6 +173,7 @@ parent: "[[123400_엔지니어링-허브]]"
 |---|---|
 | 페이지 싱크 | 활성화된 모든 프로파일 증분 동기화 |
 | 페이지 강제 싱크 (전체 덮어쓰기) | 모든 페이지 재다운로드 후 덮어쓰기 |
+| URL로 페이지 불러오기 | URL로 단일 페이지 또는 하위 페이지 일괄 수집 |
 | 싱크 로그 열기 | 동기화 통계 패널 열기 |
 | Jira 노트에 Confluence 페이지 연결 | Jira Weaver 파일의 Confluence URL을 wiki-link로 변환 |
 
@@ -139,4 +181,4 @@ parent: "[[123400_엔지니어링-허브]]"
 
 ## 라이선스
 
-MIT
+MIT — [GS-AX](https://github.com/GS-AX)

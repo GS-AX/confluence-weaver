@@ -50,6 +50,23 @@ export class FileManager {
     return 'created';
   }
 
+  async writeBinaryFile(path: string, data: ArrayBuffer): Promise<'created' | 'updated'> {
+    const normalized = normalizePath(path);
+    const existing = this.app.vault.getAbstractFileByPath(normalized);
+
+    if (existing instanceof TFile) {
+      await this.app.vault.modifyBinary(existing, data);
+      return 'updated';
+    }
+
+    const parts = normalized.split('/');
+    if (parts.length > 1) {
+      await this.ensureFolder(parts.slice(0, -1).join('/'));
+    }
+    await this.app.vault.createBinary(normalized, data);
+    return 'created';
+  }
+
   resolveFilePath(
     page: ConfluencePage,
     baseFolder: string,

@@ -1,6 +1,7 @@
 import { Notice, Plugin } from 'obsidian';
-import { ConfluenceWeaverSettings, SyncStats } from './types';
+import { ConfluencePage, ConfluenceWeaverSettings, SyncStats } from './types';
 import { linkJiraPages } from './jiraWeaverBridge';
+import { UrlPageModal } from './urlPageModal';
 import { ConfluenceClient } from './confluenceClient';
 import { FileManager } from './fileManager';
 import { buildMarkdown } from './markdownBuilder';
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: ConfluenceWeaverSettings = {
   maxBodyLength: 0,
   wikiLinks: true,
   fieldMappings: [],
+  downloadAttachments: false,
 };
 
 export default class ConfluenceWeaverPlugin extends Plugin {
@@ -56,6 +58,12 @@ export default class ConfluenceWeaverPlugin extends Plugin {
       id: 'link-jira-weaver-pages',
       name: t('cmd.linkJira'),
       callback: () => this.runJiraWeaverBridge(),
+    });
+
+    this.addCommand({
+      id: 'fetch-page-by-url',
+      name: t('cmd.fetchByUrl'),
+      callback: () => new UrlPageModal(this.app, this).open(),
     });
 
     this.addSettingTab(new ConfluenceWeaverSettingTab(this.app, this));
@@ -121,10 +129,15 @@ export default class ConfluenceWeaverPlugin extends Plugin {
               }
             }
 
+            const attachmentMap = this.settings.downloadAttachments
+              ? await this.downloadPageAttachments(page, profile.folder, client, fm)
+              : undefined;
+
             const content = buildMarkdown(
               page,
               this.settings,
-              forceOverwrite ? undefined : existing ?? undefined
+              forceOverwrite ? undefined : existing ?? undefined,
+              attachmentMap
             );
 
             // If buildMarkdown returned existing unchanged (skip-marker case), count as skipped
@@ -158,6 +171,109 @@ export default class ConfluenceWeaverPlugin extends Plugin {
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_SYNC_LOG)) {
       if (leaf.view instanceof SyncLogView) leaf.view.setStats(this.syncStats);
     }
+  }
+
+  async fetchByUrl(
+    url: string,
+    folder: string,
+    includeChildren: boolean,
+    allDescendants: boolean,
+    maxPages: number
+  ): Promise<void> {
+    if (!this.settings.domain || !this.settings.token) {
+      new Notice('Confluence Weaver: Configure domain and token in settings first.');
+      return;
+    }
+
+    const client = new ConfluenceClient(this.settings);
+    const fm = new FileManager(this.app);
+
+    // Resolve page ID from URL
+    let rootId = client.parsePageId(url);
+    if (!rootId) {
+      rootId = await client.resolveDisplayUrl(url);
+    }
+    if (!rootId) {
+      new Notice(t('notice.url.invalidUrl'));
+      return;
+    }
+
+    new Notice(t('notice.url.fetching'));
+
+    try {
+      // Collect all IDs to fetch: root + optional children/descendants
+      const idsToFetch: string[] = [rootId];
+
+      if (includeChildren) {
+        if (allDescendants) {
+          const desc = await client.collectDescendantIds(rootId, maxPages - 1);
+          idsToFetch.push(...desc);
+        } else {
+          const children = await client.getChildPageIds(rootId);
+          idsToFetch.push(...children.slice(0, maxPages - 1));
+        }
+      }
+
+      let created = 0;
+      let updated = 0;
+
+      for (const id of idsToFetch) {
+        try {
+          const page = await client.getPage(id);
+          const filePath = fm.resolveFilePath(page, folder, this.settings.folderHierarchy);
+          const existing = await fm.readFile(filePath);
+          const attachmentMap = this.settings.downloadAttachments
+            ? await this.downloadPageAttachments(page, folder, client, fm)
+            : undefined;
+          const content = buildMarkdown(page, this.settings, existing ?? undefined, attachmentMap);
+          if (existing && content === existing) continue;
+          const result = await fm.writeFile(filePath, content);
+          result === 'created' ? created++ : updated++;
+        } catch (e) {
+          console.error(`Confluence Weaver: fetch page ${id}`, e);
+        }
+      }
+
+      new Notice(
+        t('notice.url.done')
+          .replace('{created}', String(created))
+          .replace('{updated}', String(updated))
+      );
+    } catch (e) {
+      new Notice(`${t('notice.url.failed')}${(e as Error).message}`);
+    }
+  }
+
+  /**
+   * Download image attachments for a page and return a filename→vaultPath map.
+   * Skips files that are already up-to-date (existing binary untouched).
+   */
+  async downloadPageAttachments(
+    page: ConfluencePage,
+    baseFolder: string,
+    client: ConfluenceClient,
+    fm: FileManager
+  ): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    try {
+      const attachments = await client.getPageAttachments(page.id);
+      for (const att of attachments) {
+        const safeName = att.title.replace(/[\\/:*?"<>|]/g, '_');
+        const vaultPath = baseFolder
+          ? `${baseFolder}/_attachments/${page.id}/${safeName}`
+          : `_attachments/${page.id}/${safeName}`;
+        try {
+          const data = await client.downloadAttachment(att._links.download);
+          await fm.writeBinaryFile(vaultPath, data);
+          map.set(att.title, vaultPath);
+        } catch (e) {
+          console.error(`Confluence Weaver: attachment ${att.title}`, e);
+        }
+      }
+    } catch (e) {
+      console.error(`Confluence Weaver: getPageAttachments ${page.id}`, e);
+    }
+    return map;
   }
 
   async runJiraWeaverBridge(): Promise<void> {

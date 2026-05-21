@@ -26,7 +26,7 @@ __export(main_exports, {
   default: () => ConfluenceWeaverPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian5 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/jiraWeaverBridge.ts
 async function buildUrlMap(app) {
@@ -96,7 +96,449 @@ function findFrontmatterEnd(content) {
   return closeIdx + 3 + "\n---\n".length;
 }
 
+// src/urlPageModal.ts
+var import_obsidian = require("obsidian");
+
+// src/i18n/en.ts
+var en = {
+  "setting.title": "Confluence Weaver",
+  "setting.connection": "Connection",
+  "setting.domain": "Confluence domain",
+  "setting.domain.desc": "e.g. https://mycompany.atlassian.net/wiki",
+  "setting.authMode": "Auth mode",
+  "setting.authMode.basic": "Basic auth (Cloud)",
+  "setting.authMode.bearer": "Bearer token (DC/Server)",
+  "setting.email": "Email",
+  "setting.email.desc": "Used with Basic auth (Cloud)",
+  "setting.token": "Personal Access Token",
+  "setting.token.desc": "API token (Cloud) or PAT (DC/Server)",
+  "setting.testConnection": "Test connection",
+  "setting.profiles": "CQL Profiles",
+  "setting.addProfile": "+ Add profile",
+  "setting.editProfile": "Edit",
+  "setting.deleteProfile": "Delete",
+  "setting.sync": "Sync Settings",
+  "setting.syncOnStartup": "Sync on startup",
+  "setting.syncOnStartup.desc": "Run sync when Obsidian opens",
+  "setting.syncInterval": "Sync interval (minutes)",
+  "setting.syncInterval.desc": "0 = disabled, 1\u20131440",
+  "setting.missingMarker": "Missing marker behavior",
+  "setting.missingMarker.desc": "What to do when the section marker is absent",
+  "setting.missingMarker.overwrite": "Overwrite",
+  "setting.missingMarker.skip": "Skip",
+  "setting.folderHierarchy": "Preserve folder hierarchy",
+  "setting.folderHierarchy.desc": "Mirror Confluence ancestor pages as folders",
+  "setting.wikiLinks": "Convert Confluence links to wiki-links",
+  "setting.wikiLinks.desc": "Replace [[ac:link]] with Obsidian [[wiki-link]] during conversion",
+  "setting.downloadAttachments": "Download images",
+  "setting.downloadAttachments.desc": "Save attached images to _attachments/{pageId}/ and embed them locally",
+  "setting.advanced": "Advanced",
+  "setting.maxBodyLength": "Max body length (chars)",
+  "setting.maxBodyLength.desc": "0 = unlimited",
+  "setting.fieldMappings": "Custom field mappings",
+  "setting.fieldMappings.desc": "One mapping per line: dotPath \u2192 frontmatterKey (e.g. space.key \u2192 project)",
+  "cmd.sync": "Sync Pages",
+  "cmd.forceSync": "Force Sync Pages (Overwrite All)",
+  "cmd.openLog": "Open Sync Log",
+  "cmd.linkJira": "Link Confluence Pages in Jira Notes",
+  "cmd.fetchByUrl": "Fetch Page by URL",
+  "notice.connecting": "Testing connection\u2026",
+  "notice.connected": "Connection successful",
+  "notice.connectFailed": "Connection failed: ",
+  "notice.syncing": "Syncing\u2026",
+  "notice.syncDone": "Sync complete",
+  "notice.syncFailed": "Sync failed: ",
+  "notice.linkJira": "Linking Confluence pages in Jira notes\u2026",
+  "notice.linkJiraDone": "Linked {count} Confluence URLs in Jira notes.",
+  "notice.linkJiraFailed": "Link failed: ",
+  "log.title": "Confluence Weaver \u2014 Sync Log",
+  "log.profile": "Profile",
+  "log.created": "Created",
+  "log.updated": "Updated",
+  "log.skipped": "Skipped",
+  "log.errors": "Errors",
+  "log.lastSync": "Last sync",
+  "log.never": "Never",
+  "log.noStats": "No sync has run yet.",
+  "modal.editProfile": "Edit CQL Profile",
+  "modal.newProfile": "New CQL Profile",
+  "modal.profileName": "Profile name",
+  "modal.cql": "CQL query",
+  "modal.folder": "Target folder",
+  "modal.folder.desc": "Relative path inside the Vault",
+  "modal.maxPages": "Max pages",
+  "modal.save": "Save",
+  "modal.cancel": "Cancel",
+  "modal.url.title": "Fetch Page by URL",
+  "modal.url.url": "Confluence page URL",
+  "modal.url.url.desc": "Paste a Confluence page URL \u2014 Cloud, DC, or Server",
+  "modal.url.folder": "Save to folder",
+  "modal.url.children": "Include child pages",
+  "modal.url.children.desc": "Also fetch direct child pages of this page",
+  "modal.url.descendants": "Include all descendants (recursive)",
+  "modal.url.descendants.desc": "Recursively fetch all pages in the subtree",
+  "modal.url.maxPages": "Max pages to fetch",
+  "modal.url.fetch": "Fetch",
+  "notice.url.fetching": "Fetching pages\u2026",
+  "notice.url.done": "Fetched {created} new, {updated} updated.",
+  "notice.url.invalidUrl": "Could not extract a page ID from this URL.",
+  "notice.url.failed": "Fetch failed: "
+};
+var en_default = en;
+
+// src/i18n/ko.ts
+var ko = {
+  "setting.title": "Confluence Weaver",
+  "setting.connection": "\uC5F0\uACB0",
+  "setting.domain": "Confluence \uB3C4\uBA54\uC778",
+  "setting.domain.desc": "\uC608: https://mycompany.atlassian.net/wiki",
+  "setting.authMode": "\uC778\uC99D \uBC29\uC2DD",
+  "setting.authMode.basic": "Basic auth (Cloud)",
+  "setting.authMode.bearer": "Bearer token (DC/Server)",
+  "setting.email": "\uC774\uBA54\uC77C",
+  "setting.email.desc": "Basic auth (Cloud) \uC0AC\uC6A9 \uC2DC \uC785\uB825",
+  "setting.token": "\uAC1C\uC778 \uC561\uC138\uC2A4 \uD1A0\uD070",
+  "setting.token.desc": "API \uD1A0\uD070 (Cloud) \uB610\uB294 PAT (DC/Server)",
+  "setting.testConnection": "\uC5F0\uACB0 \uD14C\uC2A4\uD2B8",
+  "setting.profiles": "CQL \uD504\uB85C\uD30C\uC77C",
+  "setting.addProfile": "+ \uD504\uB85C\uD30C\uC77C \uCD94\uAC00",
+  "setting.editProfile": "\uD3B8\uC9D1",
+  "setting.deleteProfile": "\uC0AD\uC81C",
+  "setting.sync": "\uC2F1\uD06C \uC124\uC815",
+  "setting.syncOnStartup": "\uC2DC\uC791 \uC2DC \uC2F1\uD06C",
+  "setting.syncOnStartup.desc": "Obsidian \uC5F4\uB9B4 \uB54C \uC790\uB3D9 \uC2F1\uD06C",
+  "setting.syncInterval": "\uC2F1\uD06C \uC8FC\uAE30 (\uBD84)",
+  "setting.syncInterval.desc": "0 = \uBE44\uD65C\uC131, 1\u20131440",
+  "setting.missingMarker": "\uB9C8\uCEE4 \uC5C6\uB294 \uD30C\uC77C \uCC98\uB9AC",
+  "setting.missingMarker.desc": "\uC139\uC158 \uB9C8\uCEE4\uAC00 \uC5C6\uC744 \uB54C \uB3D9\uC791",
+  "setting.missingMarker.overwrite": "\uB36E\uC5B4\uC4F0\uAE30",
+  "setting.missingMarker.skip": "\uAC74\uB108\uB6F0\uAE30",
+  "setting.folderHierarchy": "\uACC4\uCE35 \uAD6C\uC870 \uD3F4\uB354 \uBC18\uC601",
+  "setting.folderHierarchy.desc": "Confluence \uC0C1\uC704 \uD398\uC774\uC9C0\uB97C \uD3F4\uB354\uB85C \uBC18\uC601",
+  "setting.wikiLinks": "Confluence \uB9C1\uD06C\uB97C wiki-link\uB85C \uBCC0\uD658",
+  "setting.wikiLinks.desc": "\uBCC0\uD658 \uC2DC [[ac:link]]\uB97C Obsidian [[wiki-link]]\uB85C \uB300\uCCB4",
+  "setting.downloadAttachments": "\uC774\uBBF8\uC9C0 \uB2E4\uC6B4\uB85C\uB4DC",
+  "setting.downloadAttachments.desc": "\uCCA8\uBD80 \uC774\uBBF8\uC9C0\uB97C _attachments/{pageId}/ \uD3F4\uB354\uC5D0 \uC800\uC7A5\uD558\uACE0 \uB85C\uCEEC \uC784\uBCA0\uB4DC\uB85C \uBCC0\uD658",
+  "setting.advanced": "\uACE0\uAE09",
+  "setting.maxBodyLength": "\uCD5C\uB300 \uBCF8\uBB38 \uAE38\uC774 (\uBB38\uC790)",
+  "setting.maxBodyLength.desc": "0 = \uC81C\uD55C \uC5C6\uC74C",
+  "setting.fieldMappings": "\uC0AC\uC6A9\uC790 \uC815\uC758 \uD544\uB4DC \uB9E4\uD551",
+  "setting.fieldMappings.desc": "\uC904\uB2F9 \uD558\uB098: dotPath \u2192 frontmatterKey (\uC608: space.key \u2192 project)",
+  "cmd.sync": "\uD398\uC774\uC9C0 \uC2F1\uD06C",
+  "cmd.forceSync": "\uD398\uC774\uC9C0 \uAC15\uC81C \uC2F1\uD06C (\uC804\uCCB4 \uB36E\uC5B4\uC4F0\uAE30)",
+  "cmd.openLog": "\uC2F1\uD06C \uB85C\uADF8 \uC5F4\uAE30",
+  "cmd.linkJira": "Jira \uB178\uD2B8\uC5D0 Confluence \uD398\uC774\uC9C0 \uC5F0\uACB0",
+  "cmd.fetchByUrl": "URL\uB85C \uD398\uC774\uC9C0 \uBD88\uB7EC\uC624\uAE30",
+  "notice.connecting": "\uC5F0\uACB0 \uD14C\uC2A4\uD2B8 \uC911\u2026",
+  "notice.connected": "\uC5F0\uACB0 \uC131\uACF5",
+  "notice.connectFailed": "\uC5F0\uACB0 \uC2E4\uD328: ",
+  "notice.syncing": "\uC2F1\uD06C \uC911\u2026",
+  "notice.syncDone": "\uC2F1\uD06C \uC644\uB8CC",
+  "notice.syncFailed": "\uC2F1\uD06C \uC2E4\uD328: ",
+  "notice.linkJira": "Jira \uB178\uD2B8\uC5D0 Confluence \uD398\uC774\uC9C0\uB97C \uC5F0\uACB0\uD558\uB294 \uC911\u2026",
+  "notice.linkJiraDone": "Jira \uB178\uD2B8\uC5D0\uC11C Confluence URL {count}\uAC1C\uB97C wiki-link\uB85C \uBCC0\uD658\uD588\uC2B5\uB2C8\uB2E4.",
+  "notice.linkJiraFailed": "\uC5F0\uACB0 \uC2E4\uD328: ",
+  "log.title": "Confluence Weaver \u2014 \uC2F1\uD06C \uB85C\uADF8",
+  "log.profile": "\uD504\uB85C\uD30C\uC77C",
+  "log.created": "\uC0DD\uC131",
+  "log.updated": "\uC5C5\uB370\uC774\uD2B8",
+  "log.skipped": "\uAC74\uB108\uB700",
+  "log.errors": "\uC624\uB958",
+  "log.lastSync": "\uB9C8\uC9C0\uB9C9 \uC2F1\uD06C",
+  "log.never": "\uC5C6\uC74C",
+  "log.noStats": "\uC544\uC9C1 \uC2F1\uD06C\uAC00 \uC2E4\uD589\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
+  "modal.editProfile": "CQL \uD504\uB85C\uD30C\uC77C \uD3B8\uC9D1",
+  "modal.newProfile": "\uC0C8 CQL \uD504\uB85C\uD30C\uC77C",
+  "modal.profileName": "\uD504\uB85C\uD30C\uC77C \uC774\uB984",
+  "modal.cql": "CQL \uCFFC\uB9AC",
+  "modal.folder": "\uB300\uC0C1 \uD3F4\uB354",
+  "modal.folder.desc": "Vault \uB0B4 \uC0C1\uB300 \uACBD\uB85C",
+  "modal.maxPages": "\uCD5C\uB300 \uD398\uC774\uC9C0 \uC218",
+  "modal.save": "\uC800\uC7A5",
+  "modal.cancel": "\uCDE8\uC18C",
+  "modal.url.title": "URL\uB85C \uD398\uC774\uC9C0 \uBD88\uB7EC\uC624\uAE30",
+  "modal.url.url": "Confluence \uD398\uC774\uC9C0 URL",
+  "modal.url.url.desc": "Cloud, DC, Server URL \uBAA8\uB450 \uC9C0\uC6D0\uD569\uB2C8\uB2E4",
+  "modal.url.folder": "\uC800\uC7A5 \uD3F4\uB354",
+  "modal.url.children": "\uD558\uC704 \uD398\uC774\uC9C0 \uD3EC\uD568",
+  "modal.url.children.desc": "\uC774 \uD398\uC774\uC9C0\uC758 \uC9C1\uC18D \uD558\uC704 \uD398\uC774\uC9C0\uB3C4 \uD568\uAED8 \uBD88\uB7EC\uC635\uB2C8\uB2E4",
+  "modal.url.descendants": "\uBAA8\uB4E0 \uD558\uC704 \uD398\uC774\uC9C0 \uD3EC\uD568 (\uC7AC\uADC0)",
+  "modal.url.descendants.desc": "\uD558\uC704 \uD2B8\uB9AC\uC758 \uBAA8\uB4E0 \uD398\uC774\uC9C0\uB97C \uC7AC\uADC0\uC801\uC73C\uB85C \uBD88\uB7EC\uC635\uB2C8\uB2E4",
+  "modal.url.maxPages": "\uCD5C\uB300 \uD398\uC774\uC9C0 \uC218",
+  "modal.url.fetch": "\uBD88\uB7EC\uC624\uAE30",
+  "notice.url.fetching": "\uD398\uC774\uC9C0\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\u2026",
+  "notice.url.done": "{created}\uAC1C \uC0DD\uC131, {updated}\uAC1C \uC5C5\uB370\uC774\uD2B8 \uC644\uB8CC.",
+  "notice.url.invalidUrl": "URL\uC5D0\uC11C \uD398\uC774\uC9C0 ID\uB97C \uCD94\uCD9C\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.",
+  "notice.url.failed": "\uBD88\uB7EC\uC624\uAE30 \uC2E4\uD328: "
+};
+var ko_default = ko;
+
+// src/i18n/ja.ts
+var ja = {
+  "setting.title": "Confluence Weaver",
+  "setting.connection": "\u63A5\u7D9A",
+  "setting.domain": "Confluence\u30C9\u30E1\u30A4\u30F3",
+  "setting.domain.desc": "\u4F8B: https://mycompany.atlassian.net/wiki",
+  "setting.authMode": "\u8A8D\u8A3C\u65B9\u5F0F",
+  "setting.authMode.basic": "Basic\u8A8D\u8A3C (Cloud)",
+  "setting.authMode.bearer": "Bearer\u30C8\u30FC\u30AF\u30F3 (DC/Server)",
+  "setting.email": "\u30E1\u30FC\u30EB\u30A2\u30C9\u30EC\u30B9",
+  "setting.email.desc": "Basic\u8A8D\u8A3C (Cloud) \u3067\u4F7F\u7528",
+  "setting.token": "\u500B\u4EBA\u30A2\u30AF\u30BB\u30B9\u30C8\u30FC\u30AF\u30F3",
+  "setting.token.desc": "API\u30C8\u30FC\u30AF\u30F3 (Cloud) \u307E\u305F\u306FPAT (DC/Server)",
+  "setting.testConnection": "\u63A5\u7D9A\u30C6\u30B9\u30C8",
+  "setting.profiles": "CQL\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB",
+  "setting.addProfile": "+ \u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u8FFD\u52A0",
+  "setting.editProfile": "\u7DE8\u96C6",
+  "setting.deleteProfile": "\u524A\u9664",
+  "setting.sync": "\u540C\u671F\u8A2D\u5B9A",
+  "setting.syncOnStartup": "\u8D77\u52D5\u6642\u306B\u540C\u671F",
+  "setting.syncOnStartup.desc": "Obsidian\u8D77\u52D5\u6642\u306B\u81EA\u52D5\u540C\u671F",
+  "setting.syncInterval": "\u540C\u671F\u9593\u9694 (\u5206)",
+  "setting.syncInterval.desc": "0 = \u7121\u52B9, 1\u20131440",
+  "setting.missingMarker": "\u30DE\u30FC\u30AB\u30FC\u6B20\u5982\u6642\u306E\u52D5\u4F5C",
+  "setting.missingMarker.desc": "\u30BB\u30AF\u30B7\u30E7\u30F3\u30DE\u30FC\u30AB\u30FC\u304C\u5B58\u5728\u3057\u306A\u3044\u5834\u5408\u306E\u51E6\u7406",
+  "setting.missingMarker.overwrite": "\u4E0A\u66F8\u304D",
+  "setting.missingMarker.skip": "\u30B9\u30AD\u30C3\u30D7",
+  "setting.folderHierarchy": "\u30D5\u30A9\u30EB\u30C0\u968E\u5C64\u3092\u7DAD\u6301",
+  "setting.folderHierarchy.desc": "Confluence\u306E\u7956\u5148\u30DA\u30FC\u30B8\u3092\u30D5\u30A9\u30EB\u30C0\u3068\u3057\u3066\u53CD\u6620",
+  "setting.wikiLinks": "Confluence\u30EA\u30F3\u30AF\u3092wiki-link\u306B\u5909\u63DB",
+  "setting.wikiLinks.desc": "\u5909\u63DB\u6642\u306B[[ac:link]]\u3092Obsidian [[wiki-link]]\u306B\u7F6E\u63DB",
+  "setting.downloadAttachments": "\u753B\u50CF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9",
+  "setting.downloadAttachments.desc": "\u6DFB\u4ED8\u753B\u50CF\u3092 _attachments/{pageId}/ \u306B\u4FDD\u5B58\u3057\u3066\u30ED\u30FC\u30AB\u30EB\u3067\u57CB\u3081\u8FBC\u3080",
+  "setting.advanced": "\u8A73\u7D30\u8A2D\u5B9A",
+  "setting.maxBodyLength": "\u672C\u6587\u306E\u6700\u5927\u6587\u5B57\u6570",
+  "setting.maxBodyLength.desc": "0 = \u5236\u9650\u306A\u3057",
+  "setting.fieldMappings": "\u30AB\u30B9\u30BF\u30E0\u30D5\u30A3\u30FC\u30EB\u30C9\u30DE\u30C3\u30D4\u30F3\u30B0",
+  "setting.fieldMappings.desc": "1\u884C1\u30DE\u30C3\u30D4\u30F3\u30B0: dotPath \u2192 frontmatterKey (\u4F8B: space.key \u2192 project)",
+  "cmd.sync": "\u30DA\u30FC\u30B8\u3092\u540C\u671F",
+  "cmd.forceSync": "\u30DA\u30FC\u30B8\u3092\u5F37\u5236\u540C\u671F (\u5168\u3066\u4E0A\u66F8\u304D)",
+  "cmd.openLog": "\u540C\u671F\u30ED\u30B0\u3092\u958B\u304F",
+  "cmd.linkJira": "Jira\u30CE\u30FC\u30C8\u306BConfluence\u30DA\u30FC\u30B8\u3092\u30EA\u30F3\u30AF",
+  "cmd.fetchByUrl": "URL\u3067\u30DA\u30FC\u30B8\u3092\u53D6\u5F97",
+  "notice.connecting": "\u63A5\u7D9A\u30C6\u30B9\u30C8\u4E2D\u2026",
+  "notice.connected": "\u63A5\u7D9A\u6210\u529F",
+  "notice.connectFailed": "\u63A5\u7D9A\u5931\u6557: ",
+  "notice.syncing": "\u540C\u671F\u4E2D\u2026",
+  "notice.syncDone": "\u540C\u671F\u5B8C\u4E86",
+  "notice.syncFailed": "\u540C\u671F\u5931\u6557: ",
+  "notice.linkJira": "Jira\u30CE\u30FC\u30C8\u306BConfluence\u30DA\u30FC\u30B8\u3092\u30EA\u30F3\u30AF\u4E2D\u2026",
+  "notice.linkJiraDone": "Jira\u30CE\u30FC\u30C8\u306EConfluence URL {count}\u4EF6\u3092wiki-link\u306B\u5909\u63DB\u3057\u307E\u3057\u305F\u3002",
+  "notice.linkJiraFailed": "\u30EA\u30F3\u30AF\u5931\u6557: ",
+  "log.title": "Confluence Weaver \u2014 \u540C\u671F\u30ED\u30B0",
+  "log.profile": "\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB",
+  "log.created": "\u4F5C\u6210",
+  "log.updated": "\u66F4\u65B0",
+  "log.skipped": "\u30B9\u30AD\u30C3\u30D7",
+  "log.errors": "\u30A8\u30E9\u30FC",
+  "log.lastSync": "\u6700\u7D42\u540C\u671F",
+  "log.never": "\u306A\u3057",
+  "log.noStats": "\u307E\u3060\u540C\u671F\u304C\u5B9F\u884C\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002",
+  "modal.editProfile": "CQL\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u7DE8\u96C6",
+  "modal.newProfile": "\u65B0\u3057\u3044CQL\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB",
+  "modal.profileName": "\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u540D",
+  "modal.cql": "CQL\u30AF\u30A8\u30EA",
+  "modal.folder": "\u5BFE\u8C61\u30D5\u30A9\u30EB\u30C0",
+  "modal.folder.desc": "Vault\u5185\u306E\u76F8\u5BFE\u30D1\u30B9",
+  "modal.maxPages": "\u6700\u5927\u30DA\u30FC\u30B8\u6570",
+  "modal.save": "\u4FDD\u5B58",
+  "modal.cancel": "\u30AD\u30E3\u30F3\u30BB\u30EB",
+  "modal.url.title": "URL\u3067\u30DA\u30FC\u30B8\u3092\u53D6\u5F97",
+  "modal.url.url": "Confluence\u30DA\u30FC\u30B8URL",
+  "modal.url.url.desc": "Cloud\u30FBDC\u30FBServer \u306EURL\u3092\u30DA\u30FC\u30B9\u30C8\u3057\u3066\u304F\u3060\u3055\u3044",
+  "modal.url.folder": "\u4FDD\u5B58\u5148\u30D5\u30A9\u30EB\u30C0",
+  "modal.url.children": "\u5B50\u30DA\u30FC\u30B8\u3092\u542B\u3081\u308B",
+  "modal.url.children.desc": "\u3053\u306E\u30DA\u30FC\u30B8\u306E\u76F4\u4E0B\u306E\u5B50\u30DA\u30FC\u30B8\u3082\u53D6\u5F97\u3057\u307E\u3059",
+  "modal.url.descendants": "\u3059\u3079\u3066\u306E\u5B50\u5B6B\u30DA\u30FC\u30B8\u3092\u542B\u3081\u308B (\u518D\u5E30)",
+  "modal.url.descendants.desc": "\u30B5\u30D6\u30C4\u30EA\u30FC\u5185\u306E\u3059\u3079\u3066\u306E\u30DA\u30FC\u30B8\u3092\u518D\u5E30\u7684\u306B\u53D6\u5F97\u3057\u307E\u3059",
+  "modal.url.maxPages": "\u6700\u5927\u30DA\u30FC\u30B8\u6570",
+  "modal.url.fetch": "\u53D6\u5F97",
+  "notice.url.fetching": "\u30DA\u30FC\u30B8\u3092\u53D6\u5F97\u4E2D\u2026",
+  "notice.url.done": "{created}\u4EF6\u4F5C\u6210\u3001{updated}\u4EF6\u66F4\u65B0\u3057\u307E\u3057\u305F\u3002",
+  "notice.url.invalidUrl": "URL\u304B\u3089\u30DA\u30FC\u30B8ID\u3092\u62BD\u51FA\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
+  "notice.url.failed": "\u53D6\u5F97\u5931\u6557: "
+};
+var ja_default = ja;
+
+// src/i18n/zh.ts
+var zh = {
+  "setting.title": "Confluence Weaver",
+  "setting.connection": "\u8FDE\u63A5",
+  "setting.domain": "Confluence \u57DF\u540D",
+  "setting.domain.desc": "\u4F8B\u5982: https://mycompany.atlassian.net/wiki",
+  "setting.authMode": "\u8BA4\u8BC1\u65B9\u5F0F",
+  "setting.authMode.basic": "Basic \u8BA4\u8BC1 (Cloud)",
+  "setting.authMode.bearer": "Bearer \u4EE4\u724C (DC/Server)",
+  "setting.email": "\u7535\u5B50\u90AE\u4EF6",
+  "setting.email.desc": "\u7528\u4E8E Basic \u8BA4\u8BC1 (Cloud)",
+  "setting.token": "\u4E2A\u4EBA\u8BBF\u95EE\u4EE4\u724C",
+  "setting.token.desc": "API \u4EE4\u724C (Cloud) \u6216 PAT (DC/Server)",
+  "setting.testConnection": "\u6D4B\u8BD5\u8FDE\u63A5",
+  "setting.profiles": "CQL \u914D\u7F6E\u6587\u4EF6",
+  "setting.addProfile": "+ \u6DFB\u52A0\u914D\u7F6E\u6587\u4EF6",
+  "setting.editProfile": "\u7F16\u8F91",
+  "setting.deleteProfile": "\u5220\u9664",
+  "setting.sync": "\u540C\u6B65\u8BBE\u7F6E",
+  "setting.syncOnStartup": "\u542F\u52A8\u65F6\u540C\u6B65",
+  "setting.syncOnStartup.desc": "\u6253\u5F00 Obsidian \u65F6\u81EA\u52A8\u540C\u6B65",
+  "setting.syncInterval": "\u540C\u6B65\u95F4\u9694 (\u5206\u949F)",
+  "setting.syncInterval.desc": "0 = \u7981\u7528, 1\u20131440",
+  "setting.missingMarker": "\u7F3A\u5C11\u6807\u8BB0\u65F6\u7684\u5904\u7406",
+  "setting.missingMarker.desc": "\u5F53\u5206\u533A\u6807\u8BB0\u4E0D\u5B58\u5728\u65F6\u7684\u5904\u7406\u65B9\u5F0F",
+  "setting.missingMarker.overwrite": "\u8986\u76D6",
+  "setting.missingMarker.skip": "\u8DF3\u8FC7",
+  "setting.folderHierarchy": "\u4FDD\u7559\u6587\u4EF6\u5939\u5C42\u7EA7",
+  "setting.folderHierarchy.desc": "\u5C06 Confluence \u7956\u5148\u9875\u9762\u6620\u5C04\u4E3A\u6587\u4EF6\u5939",
+  "setting.wikiLinks": "\u5C06 Confluence \u94FE\u63A5\u8F6C\u6362\u4E3A wiki-link",
+  "setting.wikiLinks.desc": "\u8F6C\u6362\u65F6\u5C06 [[ac:link]] \u66FF\u6362\u4E3A Obsidian [[wiki-link]]",
+  "setting.downloadAttachments": "\u4E0B\u8F7D\u56FE\u7247",
+  "setting.downloadAttachments.desc": "\u5C06\u9644\u4EF6\u56FE\u7247\u4FDD\u5B58\u5230 _attachments/{pageId}/ \u5E76\u4F7F\u7528\u672C\u5730\u5D4C\u5165",
+  "setting.advanced": "\u9AD8\u7EA7\u8BBE\u7F6E",
+  "setting.maxBodyLength": "\u6700\u5927\u6B63\u6587\u957F\u5EA6 (\u5B57\u7B26)",
+  "setting.maxBodyLength.desc": "0 = \u4E0D\u9650\u5236",
+  "setting.fieldMappings": "\u81EA\u5B9A\u4E49\u5B57\u6BB5\u6620\u5C04",
+  "setting.fieldMappings.desc": "\u6BCF\u884C\u4E00\u6761\u6620\u5C04: dotPath \u2192 frontmatterKey (\u4F8B\u5982: space.key \u2192 project)",
+  "cmd.sync": "\u540C\u6B65\u9875\u9762",
+  "cmd.forceSync": "\u5F3A\u5236\u540C\u6B65\u9875\u9762 (\u5168\u90E8\u8986\u76D6)",
+  "cmd.openLog": "\u6253\u5F00\u540C\u6B65\u65E5\u5FD7",
+  "cmd.linkJira": "\u5728 Jira \u7B14\u8BB0\u4E2D\u94FE\u63A5 Confluence \u9875\u9762",
+  "cmd.fetchByUrl": "\u901A\u8FC7 URL \u83B7\u53D6\u9875\u9762",
+  "notice.connecting": "\u6B63\u5728\u6D4B\u8BD5\u8FDE\u63A5\u2026",
+  "notice.connected": "\u8FDE\u63A5\u6210\u529F",
+  "notice.connectFailed": "\u8FDE\u63A5\u5931\u8D25: ",
+  "notice.syncing": "\u6B63\u5728\u540C\u6B65\u2026",
+  "notice.syncDone": "\u540C\u6B65\u5B8C\u6210",
+  "notice.syncFailed": "\u540C\u6B65\u5931\u8D25: ",
+  "notice.linkJira": "\u6B63\u5728 Jira \u7B14\u8BB0\u4E2D\u94FE\u63A5 Confluence \u9875\u9762\u2026",
+  "notice.linkJiraDone": "\u5DF2\u5728 Jira \u7B14\u8BB0\u4E2D\u8F6C\u6362 {count} \u4E2A Confluence URL \u4E3A wiki-link\u3002",
+  "notice.linkJiraFailed": "\u94FE\u63A5\u5931\u8D25: ",
+  "log.title": "Confluence Weaver \u2014 \u540C\u6B65\u65E5\u5FD7",
+  "log.profile": "\u914D\u7F6E\u6587\u4EF6",
+  "log.created": "\u5DF2\u521B\u5EFA",
+  "log.updated": "\u5DF2\u66F4\u65B0",
+  "log.skipped": "\u5DF2\u8DF3\u8FC7",
+  "log.errors": "\u9519\u8BEF",
+  "log.lastSync": "\u6700\u540E\u540C\u6B65",
+  "log.never": "\u4ECE\u672A",
+  "log.noStats": "\u5C1A\u672A\u6267\u884C\u540C\u6B65\u3002",
+  "modal.editProfile": "\u7F16\u8F91 CQL \u914D\u7F6E\u6587\u4EF6",
+  "modal.newProfile": "\u65B0\u5EFA CQL \u914D\u7F6E\u6587\u4EF6",
+  "modal.profileName": "\u914D\u7F6E\u6587\u4EF6\u540D\u79F0",
+  "modal.cql": "CQL \u67E5\u8BE2",
+  "modal.folder": "\u76EE\u6807\u6587\u4EF6\u5939",
+  "modal.folder.desc": "Vault \u5185\u7684\u76F8\u5BF9\u8DEF\u5F84",
+  "modal.maxPages": "\u6700\u5927\u9875\u6570",
+  "modal.save": "\u4FDD\u5B58",
+  "modal.cancel": "\u53D6\u6D88",
+  "modal.url.title": "\u901A\u8FC7 URL \u83B7\u53D6\u9875\u9762",
+  "modal.url.url": "Confluence \u9875\u9762 URL",
+  "modal.url.url.desc": "\u652F\u6301 Cloud\u3001DC \u548C Server URL",
+  "modal.url.folder": "\u4FDD\u5B58\u6587\u4EF6\u5939",
+  "modal.url.children": "\u5305\u542B\u5B50\u9875\u9762",
+  "modal.url.children.desc": "\u540C\u65F6\u83B7\u53D6\u6B64\u9875\u9762\u7684\u76F4\u63A5\u5B50\u9875\u9762",
+  "modal.url.descendants": "\u5305\u542B\u6240\u6709\u540E\u4EE3\u9875\u9762\uFF08\u9012\u5F52\uFF09",
+  "modal.url.descendants.desc": "\u9012\u5F52\u83B7\u53D6\u5B50\u6811\u4E2D\u7684\u6240\u6709\u9875\u9762",
+  "modal.url.maxPages": "\u6700\u5927\u9875\u6570",
+  "modal.url.fetch": "\u83B7\u53D6",
+  "notice.url.fetching": "\u6B63\u5728\u83B7\u53D6\u9875\u9762\u2026",
+  "notice.url.done": "\u5DF2\u521B\u5EFA {created} \u4E2A\uFF0C\u66F4\u65B0 {updated} \u4E2A\u3002",
+  "notice.url.invalidUrl": "\u65E0\u6CD5\u4ECE\u8BE5 URL \u4E2D\u63D0\u53D6\u9875\u9762 ID\u3002",
+  "notice.url.failed": "\u83B7\u53D6\u5931\u8D25: "
+};
+var zh_default = zh;
+
+// src/i18n/index.ts
+var LOCALES = { en: en_default, ko: ko_default, ja: ja_default, zh: zh_default };
+function detectLocale() {
+  const lang = window.navigator.language.toLowerCase();
+  if (lang.startsWith("ko"))
+    return "ko";
+  if (lang.startsWith("ja"))
+    return "ja";
+  if (lang.startsWith("zh"))
+    return "zh";
+  return "en";
+}
+function t(key) {
+  var _a, _b, _c;
+  const locale = detectLocale();
+  return (_c = (_b = (_a = LOCALES[locale]) == null ? void 0 : _a[key]) != null ? _b : LOCALES.en[key]) != null ? _c : key;
+}
+
+// src/urlPageModal.ts
+var UrlPageModal = class extends import_obsidian.Modal {
+  constructor(app, plugin) {
+    var _a, _b;
+    super(app);
+    this.plugin = plugin;
+    this.url = "";
+    this.folder = "Confluence";
+    this.includeChildren = false;
+    this.allDescendants = false;
+    this.maxPages = 100;
+    this.folder = (_b = (_a = plugin.settings.profiles[0]) == null ? void 0 : _a.folder) != null ? _b : "Confluence";
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: t("modal.url.title") });
+    new import_obsidian.Setting(contentEl).setName(t("modal.url.url")).setDesc(t("modal.url.url.desc")).addText((text) => {
+      text.setPlaceholder("https://mycompany.atlassian.net/wiki/spaces/DEV/pages/123456").setValue(this.url).onChange((v) => {
+        this.url = v.trim();
+      });
+      text.inputEl.addClass("cw-textarea");
+    });
+    new import_obsidian.Setting(contentEl).setName(t("modal.url.folder")).addText(
+      (text) => text.setPlaceholder("Confluence").setValue(this.folder).onChange((v) => {
+        this.folder = v.trim();
+      })
+    );
+    const childrenSetting = new import_obsidian.Setting(contentEl).setName(t("modal.url.children")).setDesc(t("modal.url.children.desc")).addToggle(
+      (toggle) => toggle.setValue(this.includeChildren).onChange((v) => {
+        this.includeChildren = v;
+        descendantsSetting.settingEl.toggle(v);
+        maxPagesSetting.settingEl.toggle(v);
+      })
+    );
+    const descendantsSetting = new import_obsidian.Setting(contentEl).setName(t("modal.url.descendants")).setDesc(t("modal.url.descendants.desc")).addToggle(
+      (toggle) => toggle.setValue(this.allDescendants).onChange((v) => {
+        this.allDescendants = v;
+      })
+    );
+    const maxPagesSetting = new import_obsidian.Setting(contentEl).setName(t("modal.url.maxPages")).addText(
+      (text) => text.setValue(String(this.maxPages)).onChange((v) => {
+        this.maxPages = Math.max(1, parseInt(v) || 100);
+      })
+    );
+    descendantsSetting.settingEl.toggle(this.includeChildren);
+    maxPagesSetting.settingEl.toggle(this.includeChildren);
+    new import_obsidian.Setting(contentEl).addButton(
+      (btn) => btn.setButtonText(t("modal.url.fetch")).setCta().onClick(() => this.submit())
+    ).addButton(
+      (btn) => btn.setButtonText(t("modal.cancel")).onClick(() => this.close())
+    );
+  }
+  async submit() {
+    if (!this.url) {
+      new import_obsidian.Notice(t("notice.url.invalidUrl"));
+      return;
+    }
+    this.close();
+    await this.plugin.fetchByUrl(
+      this.url,
+      this.folder,
+      this.includeChildren,
+      this.allDescendants,
+      this.maxPages
+    );
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
 // src/confluenceClient.ts
+var import_obsidian2 = require("obsidian");
 var ConfluenceClient = class {
   constructor(settings) {
     this.settings = settings;
@@ -112,8 +554,10 @@ var ConfluenceClient = class {
     return `Bearer ${this.settings.token}`;
   }
   async get(path) {
+    var _a;
     const url = `${this.baseUrl}${path}`;
-    const resp = await fetch(url, {
+    const resp = await (0, import_obsidian2.requestUrl)({
+      url,
       method: "GET",
       headers: {
         Authorization: this.authHeader(),
@@ -121,12 +565,11 @@ var ConfluenceClient = class {
         Accept: "application/json"
       }
     });
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      const hint = body.slice(0, 200);
-      throw new Error(`${resp.status} ${resp.statusText}${hint ? ": " + hint : ""}`);
+    if (resp.status >= 400) {
+      const preview = ((_a = resp.text) != null ? _a : "").slice(0, 200);
+      throw new Error(`${resp.status}${preview ? ": " + preview : ""}`);
     }
-    return resp.json();
+    return resp.json;
   }
   async testConnection() {
     await this.get("/rest/api/space?limit=1");
@@ -143,6 +586,74 @@ var ConfluenceClient = class {
       `/rest/api/content/${id}?expand=body.storage,version,ancestors,space,metadata.labels,history`
     );
   }
+  /**
+   * Extract a page ID from any Confluence URL format:
+   *  - /pages/123456/...          (Cloud & DC path)
+   *  - pageId=123456              (DC viewpage.action query string)
+   *  - /display/SPACE/Title       (DC display URL — resolves via title search)
+   * Returns null when no ID can be extracted without an API call.
+   */
+  parsePageId(url) {
+    const pathMatch = url.match(/\/pages\/(\d+)/);
+    if (pathMatch)
+      return pathMatch[1];
+    const queryMatch = url.match(/[?&]pageId=(\d+)/);
+    if (queryMatch)
+      return queryMatch[1];
+    return null;
+  }
+  /**
+   * Resolve a Confluence /display/SPACE/Title URL by searching for the title.
+   * Used as fallback when parsePageId returns null.
+   */
+  async resolveDisplayUrl(url) {
+    var _a, _b;
+    const displayMatch = url.match(/\/display\/([^/?#]+)\/([^?#]+)/);
+    if (!displayMatch)
+      return null;
+    const spaceKey = decodeURIComponent(displayMatch[1]);
+    const title = decodeURIComponent(displayMatch[2].replace(/\+/g, " "));
+    const cql = `space = "${spaceKey}" AND title = "${title.replace(/"/g, '\\"')}"`;
+    const results = await this.searchCQL(cql, 1);
+    return (_b = (_a = results[0]) == null ? void 0 : _a.id) != null ? _b : null;
+  }
+  /** Fetch direct child pages (no body — IDs only for batch fetch). */
+  async getChildPageIds(parentId) {
+    var _a;
+    let start = 0;
+    const limit = 50;
+    const ids = [];
+    while (true) {
+      const data = await this.get(
+        `/rest/api/content/${parentId}/child/page?limit=${limit}&start=${start}`
+      );
+      const results = (_a = data.results) != null ? _a : [];
+      ids.push(...results.map((r) => r.id));
+      if (results.length < limit)
+        break;
+      start += limit;
+    }
+    return ids;
+  }
+  /**
+   * Collect all descendant page IDs using BFS.
+   * Stops when maxPages is reached to prevent runaway fetches.
+   */
+  async collectDescendantIds(rootId, maxPages) {
+    const all = [];
+    const queue = [rootId];
+    while (queue.length > 0 && all.length < maxPages) {
+      const id = queue.shift();
+      const children = await this.getChildPageIds(id);
+      for (const cid of children) {
+        if (all.length >= maxPages)
+          break;
+        all.push(cid);
+        queue.push(cid);
+      }
+    }
+    return all;
+  }
   async getPageProperties(id) {
     var _a;
     const data = await this.get(
@@ -150,10 +661,45 @@ var ConfluenceClient = class {
     );
     return Object.fromEntries(((_a = data.results) != null ? _a : []).map((p) => [p.key, p.value]));
   }
+  /** Fetch all attachments for a page. Returns image attachments by default. */
+  async getPageAttachments(pageId, imagesOnly = true) {
+    var _a, _b, _c;
+    let start = 0;
+    const limit = 50;
+    const results = [];
+    while (true) {
+      const data = await this.get(
+        `/rest/api/content/${pageId}/child/attachment?limit=${limit}&start=${start}&expand=metadata`
+      );
+      const batch = (_a = data.results) != null ? _a : [];
+      for (const att of batch) {
+        if (!imagesOnly || ((_c = (_b = att.metadata) == null ? void 0 : _b.mediaType) == null ? void 0 : _c.startsWith("image/"))) {
+          results.push(att);
+        }
+      }
+      if (batch.length < limit)
+        break;
+      start += limit;
+    }
+    return results;
+  }
+  /** Download a Confluence attachment and return its raw bytes. */
+  async downloadAttachment(downloadPath) {
+    const url = downloadPath.startsWith("http") ? downloadPath : `${this.baseUrl}${downloadPath}`;
+    const resp = await (0, import_obsidian2.requestUrl)({
+      url,
+      method: "GET",
+      headers: { Authorization: this.authHeader() }
+    });
+    if (resp.status >= 400) {
+      throw new Error(`${resp.status}: attachment download failed`);
+    }
+    return resp.arrayBuffer;
+  }
 };
 
 // src/fileManager.ts
-var import_obsidian = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/fieldResolver.ts
 function yamlString(value) {
@@ -167,7 +713,7 @@ function yamlDate(isoString) {
   return (isoString || "").split("T")[0];
 }
 function slugify(text) {
-  return text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/^-+|-+$/g, "");
+  return text.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "-").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
 }
 
 // src/fileManager.ts
@@ -177,11 +723,11 @@ var FileManager = class {
   }
   async ensureFolder(folderPath) {
     var _a;
-    const path = (0, import_obsidian.normalizePath)(folderPath);
+    const path = (0, import_obsidian3.normalizePath)(folderPath);
     if (!path || path === ".")
       return;
     const existing = this.app.vault.getAbstractFileByPath(path);
-    if (existing instanceof import_obsidian.TFolder)
+    if (existing instanceof import_obsidian3.TFolder)
       return;
     const parts = path.split("/");
     if (parts.length > 1) {
@@ -198,13 +744,13 @@ var FileManager = class {
     }
   }
   async readFile(path) {
-    const file = this.app.vault.getAbstractFileByPath((0, import_obsidian.normalizePath)(path));
-    return file instanceof import_obsidian.TFile ? this.app.vault.read(file) : null;
+    const file = this.app.vault.getAbstractFileByPath((0, import_obsidian3.normalizePath)(path));
+    return file instanceof import_obsidian3.TFile ? this.app.vault.read(file) : null;
   }
   async writeFile(path, content) {
-    const normalized = (0, import_obsidian.normalizePath)(path);
+    const normalized = (0, import_obsidian3.normalizePath)(path);
     const existing = this.app.vault.getAbstractFileByPath(normalized);
-    if (existing instanceof import_obsidian.TFile) {
+    if (existing instanceof import_obsidian3.TFile) {
       await this.app.vault.modify(existing, content);
       return "updated";
     }
@@ -215,15 +761,29 @@ var FileManager = class {
     await this.app.vault.create(normalized, content);
     return "created";
   }
+  async writeBinaryFile(path, data) {
+    const normalized = (0, import_obsidian3.normalizePath)(path);
+    const existing = this.app.vault.getAbstractFileByPath(normalized);
+    if (existing instanceof import_obsidian3.TFile) {
+      await this.app.vault.modifyBinary(existing, data);
+      return "updated";
+    }
+    const parts = normalized.split("/");
+    if (parts.length > 1) {
+      await this.ensureFolder(parts.slice(0, -1).join("/"));
+    }
+    await this.app.vault.createBinary(normalized, data);
+    return "created";
+  }
   resolveFilePath(page, baseFolder, folderHierarchy) {
     var _a;
     const fileName = `${page.id}_${slugify(page.title)}.md`;
     if (folderHierarchy && ((_a = page.ancestors) == null ? void 0 : _a.length) > 0) {
       const ancestorPath = page.ancestors.map((a) => slugify(a.title)).join("/");
       const folder = baseFolder ? `${baseFolder}/${ancestorPath}` : ancestorPath;
-      return (0, import_obsidian.normalizePath)(`${folder}/${fileName}`);
+      return (0, import_obsidian3.normalizePath)(`${folder}/${fileName}`);
     }
-    return baseFolder ? (0, import_obsidian.normalizePath)(`${baseFolder}/${fileName}`) : (0, import_obsidian.normalizePath)(fileName);
+    return baseFolder ? (0, import_obsidian3.normalizePath)(`${baseFolder}/${fileName}`) : (0, import_obsidian3.normalizePath)(fileName);
   }
 };
 
@@ -314,7 +874,11 @@ ${code}
   );
   s = s.replace(
     /<ac:image[^>]*>\s*<ri:attachment[^>]*\bri:filename="([^"]*)"[^>]*\/?>\s*<\/ac:image>/gi,
-    (_m, filename) => `![${filename}](${filename})`
+    (_m, filename) => {
+      var _a;
+      const vaultPath = (_a = options.attachmentMap) == null ? void 0 : _a.get(filename);
+      return vaultPath ? `![[${vaultPath}]]` : `![${filename}](${filename})`;
+    }
   );
   s = s.replace(
     /<ac:image[^>]*>\s*<ri:url[^>]*\bri:value="([^"]*)"[^>]*\/?>\s*<\/ac:image>/gi,
@@ -474,9 +1038,9 @@ function renderTable(table) {
 }
 
 // src/markdownBuilder.ts
-function buildMarkdown(page, settings, existingContent) {
+function buildMarkdown(page, settings, existingContent, attachmentMap) {
   const frontmatter = buildFrontmatter(page, settings);
-  const body = buildBody(page, settings);
+  const body = buildBody(page, settings, attachmentMap);
   const freshContent = `${frontmatter}
 ${body}
 
@@ -540,10 +1104,11 @@ function buildFrontmatter(page, settings) {
   lines.push("---");
   return lines.join("\n");
 }
-function buildBody(page, settings) {
+function buildBody(page, settings, attachmentMap) {
   var _a, _b, _c;
   let body = storageToMarkdown((_c = (_b = (_a = page.body) == null ? void 0 : _a.storage) == null ? void 0 : _b.value) != null ? _c : "", {
-    wikiLinks: settings.wikiLinks
+    wikiLinks: settings.wikiLinks,
+    attachmentMap
   });
   if (settings.maxBodyLength > 0 && body.length > settings.maxBodyLength) {
     body = body.slice(0, settings.maxBodyLength) + "\n\n\u2026(truncated)";
@@ -560,154 +1125,11 @@ function resolvePath(obj, path) {
 }
 
 // src/settings.ts
-var import_obsidian3 = require("obsidian");
-
-// src/i18n.ts
-var TRANSLATIONS = {
-  en: {
-    "setting.title": "Confluence Weaver",
-    "setting.connection": "Connection",
-    "setting.domain": "Confluence domain",
-    "setting.domain.desc": "e.g. https://mycompany.atlassian.net/wiki",
-    "setting.authMode": "Auth mode",
-    "setting.authMode.basic": "Basic auth (Cloud)",
-    "setting.authMode.bearer": "Bearer token (DC/Server)",
-    "setting.email": "Email",
-    "setting.email.desc": "Used with Basic auth (Cloud)",
-    "setting.token": "Personal Access Token",
-    "setting.token.desc": "API token (Cloud) or PAT (DC/Server)",
-    "setting.testConnection": "Test connection",
-    "setting.profiles": "CQL Profiles",
-    "setting.addProfile": "+ Add profile",
-    "setting.editProfile": "Edit",
-    "setting.deleteProfile": "Delete",
-    "setting.sync": "Sync Settings",
-    "setting.syncOnStartup": "Sync on startup",
-    "setting.syncOnStartup.desc": "Run sync when Obsidian opens",
-    "setting.syncInterval": "Sync interval (minutes)",
-    "setting.syncInterval.desc": "0 = disabled, 1\u20131440",
-    "setting.missingMarker": "Missing marker behavior",
-    "setting.missingMarker.desc": "What to do when the section marker is absent",
-    "setting.missingMarker.overwrite": "Overwrite",
-    "setting.missingMarker.skip": "Skip",
-    "setting.folderHierarchy": "Preserve folder hierarchy",
-    "setting.folderHierarchy.desc": "Mirror Confluence ancestor pages as folders",
-    "setting.advanced": "Advanced",
-    "setting.maxBodyLength": "Max body length (chars)",
-    "setting.maxBodyLength.desc": "0 = unlimited",
-    "setting.wikiLinks": "Convert Confluence links to wiki-links",
-    "setting.wikiLinks.desc": "Replace [[ac:link]] with Obsidian [[wiki-link]] during conversion",
-    "setting.fieldMappings": "Custom field mappings",
-    "setting.fieldMappings.desc": "One mapping per line: dotPath \u2192 frontmatterKey (e.g. space.key \u2192 project)",
-    "cmd.sync": "Sync Pages",
-    "cmd.forceSync": "Force Sync Pages (Overwrite All)",
-    "cmd.openLog": "Open Sync Log",
-    "cmd.linkJira": "Link Confluence Pages in Jira Notes",
-    "notice.linkJira": "Linking Confluence pages in Jira notes\u2026",
-    "notice.linkJiraDone": "Linked {count} Confluence URLs in Jira notes.",
-    "notice.linkJiraFailed": "Link failed: ",
-    "notice.connecting": "Testing connection\u2026",
-    "notice.connected": "Connection successful",
-    "notice.connectFailed": "Connection failed: ",
-    "notice.syncing": "Syncing\u2026",
-    "notice.syncDone": "Sync complete",
-    "notice.syncFailed": "Sync failed: ",
-    "log.title": "Confluence Weaver \u2014 Sync Log",
-    "log.profile": "Profile",
-    "log.created": "Created",
-    "log.updated": "Updated",
-    "log.skipped": "Skipped",
-    "log.errors": "Errors",
-    "log.lastSync": "Last sync",
-    "log.never": "Never",
-    "log.noStats": "No sync has run yet.",
-    "modal.editProfile": "Edit CQL Profile",
-    "modal.newProfile": "New CQL Profile",
-    "modal.profileName": "Profile name",
-    "modal.cql": "CQL query",
-    "modal.folder": "Target folder",
-    "modal.folder.desc": "Relative path inside the Vault",
-    "modal.maxPages": "Max pages",
-    "modal.save": "Save",
-    "modal.cancel": "Cancel"
-  },
-  ko: {
-    "setting.title": "Confluence Weaver",
-    "setting.connection": "\uC5F0\uACB0",
-    "setting.domain": "Confluence \uB3C4\uBA54\uC778",
-    "setting.domain.desc": "\uC608: https://mycompany.atlassian.net/wiki",
-    "setting.authMode": "\uC778\uC99D \uBC29\uC2DD",
-    "setting.authMode.basic": "Basic auth (Cloud)",
-    "setting.authMode.bearer": "Bearer token (DC/Server)",
-    "setting.email": "\uC774\uBA54\uC77C",
-    "setting.email.desc": "Basic auth (Cloud) \uC0AC\uC6A9 \uC2DC \uC785\uB825",
-    "setting.token": "\uAC1C\uC778 \uC561\uC138\uC2A4 \uD1A0\uD070",
-    "setting.token.desc": "API \uD1A0\uD070 (Cloud) \uB610\uB294 PAT (DC/Server)",
-    "setting.testConnection": "\uC5F0\uACB0 \uD14C\uC2A4\uD2B8",
-    "setting.profiles": "CQL \uD504\uB85C\uD30C\uC77C",
-    "setting.addProfile": "+ \uD504\uB85C\uD30C\uC77C \uCD94\uAC00",
-    "setting.editProfile": "\uD3B8\uC9D1",
-    "setting.deleteProfile": "\uC0AD\uC81C",
-    "setting.sync": "\uC2F1\uD06C \uC124\uC815",
-    "setting.syncOnStartup": "\uC2DC\uC791 \uC2DC \uC2F1\uD06C",
-    "setting.syncOnStartup.desc": "Obsidian \uC5F4\uB9B4 \uB54C \uC790\uB3D9 \uC2F1\uD06C",
-    "setting.syncInterval": "\uC2F1\uD06C \uC8FC\uAE30 (\uBD84)",
-    "setting.syncInterval.desc": "0 = \uBE44\uD65C\uC131, 1\u20131440",
-    "setting.missingMarker": "\uB9C8\uCEE4 \uC5C6\uB294 \uD30C\uC77C \uCC98\uB9AC",
-    "setting.missingMarker.desc": "\uC139\uC158 \uB9C8\uCEE4\uAC00 \uC5C6\uC744 \uB54C \uB3D9\uC791",
-    "setting.missingMarker.overwrite": "\uB36E\uC5B4\uC4F0\uAE30",
-    "setting.missingMarker.skip": "\uAC74\uB108\uB6F0\uAE30",
-    "setting.folderHierarchy": "\uACC4\uCE35 \uAD6C\uC870 \uD3F4\uB354 \uBC18\uC601",
-    "setting.folderHierarchy.desc": "Confluence \uC0C1\uC704 \uD398\uC774\uC9C0\uB97C \uD3F4\uB354\uB85C \uBC18\uC601",
-    "setting.advanced": "\uACE0\uAE09",
-    "setting.maxBodyLength": "\uCD5C\uB300 \uBCF8\uBB38 \uAE38\uC774 (\uBB38\uC790)",
-    "setting.maxBodyLength.desc": "0 = \uC81C\uD55C \uC5C6\uC74C",
-    "setting.wikiLinks": "Confluence \uB9C1\uD06C\uB97C wiki-link\uB85C \uBCC0\uD658",
-    "setting.wikiLinks.desc": "\uBCC0\uD658 \uC2DC [[ac:link]]\uB97C Obsidian [[wiki-link]]\uB85C \uB300\uCCB4",
-    "setting.fieldMappings": "\uC0AC\uC6A9\uC790 \uC815\uC758 \uD544\uB4DC \uB9E4\uD551",
-    "setting.fieldMappings.desc": "\uC904\uB2F9 \uD558\uB098: dotPath \u2192 frontmatterKey (\uC608: space.key \u2192 project)",
-    "cmd.sync": "\uD398\uC774\uC9C0 \uC2F1\uD06C",
-    "cmd.forceSync": "\uD398\uC774\uC9C0 \uAC15\uC81C \uC2F1\uD06C (\uC804\uCCB4 \uB36E\uC5B4\uC4F0\uAE30)",
-    "cmd.openLog": "\uC2F1\uD06C \uB85C\uADF8 \uC5F4\uAE30",
-    "cmd.linkJira": "Jira \uB178\uD2B8\uC5D0 Confluence \uD398\uC774\uC9C0 \uC5F0\uACB0",
-    "notice.linkJira": "Jira \uB178\uD2B8\uC5D0 Confluence \uD398\uC774\uC9C0\uB97C \uC5F0\uACB0\uD558\uB294 \uC911\u2026",
-    "notice.linkJiraDone": "Jira \uB178\uD2B8\uC5D0\uC11C Confluence URL {count}\uAC1C\uB97C wiki-link\uB85C \uBCC0\uD658\uD588\uC2B5\uB2C8\uB2E4.",
-    "notice.linkJiraFailed": "\uC5F0\uACB0 \uC2E4\uD328: ",
-    "notice.connecting": "\uC5F0\uACB0 \uD14C\uC2A4\uD2B8 \uC911\u2026",
-    "notice.connected": "\uC5F0\uACB0 \uC131\uACF5",
-    "notice.connectFailed": "\uC5F0\uACB0 \uC2E4\uD328: ",
-    "notice.syncing": "\uC2F1\uD06C \uC911\u2026",
-    "notice.syncDone": "\uC2F1\uD06C \uC644\uB8CC",
-    "notice.syncFailed": "\uC2F1\uD06C \uC2E4\uD328: ",
-    "log.title": "Confluence Weaver \u2014 \uC2F1\uD06C \uB85C\uADF8",
-    "log.profile": "\uD504\uB85C\uD30C\uC77C",
-    "log.created": "\uC0DD\uC131",
-    "log.updated": "\uC5C5\uB370\uC774\uD2B8",
-    "log.skipped": "\uAC74\uB108\uB700",
-    "log.errors": "\uC624\uB958",
-    "log.lastSync": "\uB9C8\uC9C0\uB9C9 \uC2F1\uD06C",
-    "log.never": "\uC5C6\uC74C",
-    "log.noStats": "\uC544\uC9C1 \uC2F1\uD06C\uAC00 \uC2E4\uD589\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.",
-    "modal.editProfile": "CQL \uD504\uB85C\uD30C\uC77C \uD3B8\uC9D1",
-    "modal.newProfile": "\uC0C8 CQL \uD504\uB85C\uD30C\uC77C",
-    "modal.profileName": "\uD504\uB85C\uD30C\uC77C \uC774\uB984",
-    "modal.cql": "CQL \uCFFC\uB9AC",
-    "modal.folder": "\uB300\uC0C1 \uD3F4\uB354",
-    "modal.folder.desc": "Vault \uB0B4 \uC0C1\uB300 \uACBD\uB85C",
-    "modal.maxPages": "\uCD5C\uB300 \uD398\uC774\uC9C0 \uC218",
-    "modal.save": "\uC800\uC7A5",
-    "modal.cancel": "\uCDE8\uC18C"
-  }
-};
-function t(key) {
-  var _a, _b, _c;
-  const lang = window.navigator.language.startsWith("ko") ? "ko" : "en";
-  return (_c = (_b = (_a = TRANSLATIONS[lang]) == null ? void 0 : _a[key]) != null ? _b : TRANSLATIONS.en[key]) != null ? _c : key;
-}
+var import_obsidian5 = require("obsidian");
 
 // src/cqlProfileModal.ts
-var import_obsidian2 = require("obsidian");
-var CqlProfileModal = class extends import_obsidian2.Modal {
+var import_obsidian4 = require("obsidian");
+var CqlProfileModal = class extends import_obsidian4.Modal {
   constructor(app, profile, onSave) {
     super(app);
     this.profile = { ...profile };
@@ -718,29 +1140,29 @@ var CqlProfileModal = class extends import_obsidian2.Modal {
     contentEl.empty();
     const isNew = !this.profile.id;
     contentEl.createEl("h2", { text: isNew ? t("modal.newProfile") : t("modal.editProfile") });
-    new import_obsidian2.Setting(contentEl).setName(t("modal.profileName")).addText(
+    new import_obsidian4.Setting(contentEl).setName(t("modal.profileName")).addText(
       (text) => text.setValue(this.profile.name).onChange((v) => {
         this.profile.name = v;
       })
     );
-    new import_obsidian2.Setting(contentEl).setName(t("modal.cql")).addTextArea((area) => {
+    new import_obsidian4.Setting(contentEl).setName(t("modal.cql")).addTextArea((area) => {
       area.setValue(this.profile.cql).onChange((v) => {
         this.profile.cql = v;
       });
       area.inputEl.rows = 4;
       area.inputEl.addClass("cw-textarea");
     });
-    new import_obsidian2.Setting(contentEl).setName(t("modal.folder")).setDesc(t("modal.folder.desc")).addText(
+    new import_obsidian4.Setting(contentEl).setName(t("modal.folder")).setDesc(t("modal.folder.desc")).addText(
       (text) => text.setPlaceholder("Confluence").setValue(this.profile.folder).onChange((v) => {
         this.profile.folder = v;
       })
     );
-    new import_obsidian2.Setting(contentEl).setName(t("modal.maxPages")).addText(
+    new import_obsidian4.Setting(contentEl).setName(t("modal.maxPages")).addText(
       (text) => text.setValue(String(this.profile.maxPages)).onChange((v) => {
         this.profile.maxPages = Math.max(1, parseInt(v) || 50);
       })
     );
-    new import_obsidian2.Setting(contentEl).addButton(
+    new import_obsidian4.Setting(contentEl).addButton(
       (btn) => btn.setButtonText(t("modal.save")).setCta().onClick(() => {
         if (isNew)
           this.profile.id = Date.now().toString();
@@ -757,7 +1179,7 @@ var CqlProfileModal = class extends import_obsidian2.Modal {
 };
 
 // src/settings.ts
-var ConfluenceWeaverSettingTab = class extends import_obsidian3.PluginSettingTab {
+var ConfluenceWeaverSettingTab = class extends import_obsidian5.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -767,13 +1189,13 @@ var ConfluenceWeaverSettingTab = class extends import_obsidian3.PluginSettingTab
     containerEl.empty();
     containerEl.createEl("h2", { text: t("setting.title") });
     containerEl.createEl("h3", { text: t("setting.connection") });
-    new import_obsidian3.Setting(containerEl).setName(t("setting.domain")).setDesc(t("setting.domain.desc")).addText(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.domain")).setDesc(t("setting.domain.desc")).addText(
       (text) => text.setPlaceholder("https://mycompany.atlassian.net/wiki").setValue(this.plugin.settings.domain).onChange(async (v) => {
         this.plugin.settings.domain = v.trim();
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName(t("setting.authMode")).addDropdown(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.authMode")).addDropdown(
       (drop) => drop.addOption("basic", t("setting.authMode.basic")).addOption("bearer", t("setting.authMode.bearer")).setValue(this.plugin.settings.authMode).onChange(async (v) => {
         this.plugin.settings.authMode = v;
         await this.plugin.saveSettings();
@@ -781,34 +1203,34 @@ var ConfluenceWeaverSettingTab = class extends import_obsidian3.PluginSettingTab
       })
     );
     if (this.plugin.settings.authMode === "basic") {
-      new import_obsidian3.Setting(containerEl).setName(t("setting.email")).setDesc(t("setting.email.desc")).addText(
+      new import_obsidian5.Setting(containerEl).setName(t("setting.email")).setDesc(t("setting.email.desc")).addText(
         (text) => text.setValue(this.plugin.settings.email).onChange(async (v) => {
           this.plugin.settings.email = v.trim();
           await this.plugin.saveSettings();
         })
       );
     }
-    new import_obsidian3.Setting(containerEl).setName(t("setting.token")).setDesc(t("setting.token.desc")).addText((text) => {
+    new import_obsidian5.Setting(containerEl).setName(t("setting.token")).setDesc(t("setting.token.desc")).addText((text) => {
       text.setValue(this.plugin.settings.token).onChange(async (v) => {
         this.plugin.settings.token = v.trim();
         await this.plugin.saveSettings();
       });
       text.inputEl.type = "password";
     });
-    new import_obsidian3.Setting(containerEl).addButton(
+    new import_obsidian5.Setting(containerEl).addButton(
       (btn) => btn.setButtonText(t("setting.testConnection")).onClick(async () => {
-        new import_obsidian3.Notice(t("notice.connecting"));
+        new import_obsidian5.Notice(t("notice.connecting"));
         try {
           await new ConfluenceClient(this.plugin.settings).testConnection();
-          new import_obsidian3.Notice(t("notice.connected"));
+          new import_obsidian5.Notice(t("notice.connected"));
         } catch (e) {
-          new import_obsidian3.Notice(`${t("notice.connectFailed")}${e.message}`);
+          new import_obsidian5.Notice(`${t("notice.connectFailed")}${e.message}`);
         }
       })
     );
     containerEl.createEl("h3", { text: t("setting.profiles") });
     for (const profile of this.plugin.settings.profiles) {
-      const setting = new import_obsidian3.Setting(containerEl).setName(profile.name || "(unnamed)").setDesc(profile.cql);
+      const setting = new import_obsidian5.Setting(containerEl).setName(profile.name || "(unnamed)").setDesc(profile.cql);
       setting.addToggle(
         (toggle) => toggle.setValue(profile.enabled).onChange(async (v) => {
           profile.enabled = v;
@@ -836,7 +1258,7 @@ var ConfluenceWeaverSettingTab = class extends import_obsidian3.PluginSettingTab
         })
       );
     }
-    new import_obsidian3.Setting(containerEl).addButton(
+    new import_obsidian5.Setting(containerEl).addButton(
       (btn) => btn.setButtonText(t("setting.addProfile")).onClick(() => {
         const blank = {
           id: "",
@@ -854,45 +1276,51 @@ var ConfluenceWeaverSettingTab = class extends import_obsidian3.PluginSettingTab
       })
     );
     containerEl.createEl("h3", { text: t("setting.sync") });
-    new import_obsidian3.Setting(containerEl).setName(t("setting.syncOnStartup")).setDesc(t("setting.syncOnStartup.desc")).addToggle(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.syncOnStartup")).setDesc(t("setting.syncOnStartup.desc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.syncOnStartup).onChange(async (v) => {
         this.plugin.settings.syncOnStartup = v;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName(t("setting.syncInterval")).setDesc(t("setting.syncInterval.desc")).addText(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.syncInterval")).setDesc(t("setting.syncInterval.desc")).addText(
       (text) => text.setValue(String(this.plugin.settings.syncInterval)).onChange(async (v) => {
         this.plugin.settings.syncInterval = Math.min(1440, Math.max(0, parseInt(v) || 0));
         await this.plugin.saveSettings();
         this.plugin.scheduler.restart();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName(t("setting.missingMarker")).setDesc(t("setting.missingMarker.desc")).addDropdown(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.missingMarker")).setDesc(t("setting.missingMarker.desc")).addDropdown(
       (drop) => drop.addOption("overwrite", t("setting.missingMarker.overwrite")).addOption("skip", t("setting.missingMarker.skip")).setValue(this.plugin.settings.missingMarker).onChange(async (v) => {
         this.plugin.settings.missingMarker = v;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName(t("setting.folderHierarchy")).setDesc(t("setting.folderHierarchy.desc")).addToggle(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.folderHierarchy")).setDesc(t("setting.folderHierarchy.desc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.folderHierarchy).onChange(async (v) => {
         this.plugin.settings.folderHierarchy = v;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName(t("setting.wikiLinks")).setDesc(t("setting.wikiLinks.desc")).addToggle(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.wikiLinks")).setDesc(t("setting.wikiLinks.desc")).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.wikiLinks).onChange(async (v) => {
         this.plugin.settings.wikiLinks = v;
         await this.plugin.saveSettings();
       })
     );
+    new import_obsidian5.Setting(containerEl).setName(t("setting.downloadAttachments")).setDesc(t("setting.downloadAttachments.desc")).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.downloadAttachments).onChange(async (v) => {
+        this.plugin.settings.downloadAttachments = v;
+        await this.plugin.saveSettings();
+      })
+    );
     containerEl.createEl("h3", { text: t("setting.advanced") });
-    new import_obsidian3.Setting(containerEl).setName(t("setting.maxBodyLength")).setDesc(t("setting.maxBodyLength.desc")).addText(
+    new import_obsidian5.Setting(containerEl).setName(t("setting.maxBodyLength")).setDesc(t("setting.maxBodyLength.desc")).addText(
       (text) => text.setValue(String(this.plugin.settings.maxBodyLength)).onChange(async (v) => {
         this.plugin.settings.maxBodyLength = Math.max(0, parseInt(v) || 0);
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName(t("setting.fieldMappings")).setDesc(t("setting.fieldMappings.desc")).addTextArea((area) => {
+    new import_obsidian5.Setting(containerEl).setName(t("setting.fieldMappings")).setDesc(t("setting.fieldMappings.desc")).addTextArea((area) => {
       const toText = () => {
         var _a;
         return ((_a = this.plugin.settings.fieldMappings) != null ? _a : []).map((m) => `${m.sourcePath} \u2192 ${m.frontmatterKey}`).join("\n");
@@ -945,9 +1373,9 @@ var SyncScheduler = class {
 };
 
 // src/syncLogView.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 var VIEW_TYPE_SYNC_LOG = "confluence-weaver-sync-log";
-var SyncLogView = class extends import_obsidian4.ItemView {
+var SyncLogView = class extends import_obsidian6.ItemView {
   constructor(leaf) {
     super(leaf);
     this.stats = [];
@@ -1009,9 +1437,10 @@ var DEFAULT_SETTINGS = {
   folderHierarchy: false,
   maxBodyLength: 0,
   wikiLinks: true,
-  fieldMappings: []
+  fieldMappings: [],
+  downloadAttachments: false
 };
-var ConfluenceWeaverPlugin = class extends import_obsidian5.Plugin {
+var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
   constructor() {
     super(...arguments);
     this.settings = { ...DEFAULT_SETTINGS };
@@ -1041,6 +1470,11 @@ var ConfluenceWeaverPlugin = class extends import_obsidian5.Plugin {
       name: t("cmd.linkJira"),
       callback: () => this.runJiraWeaverBridge()
     });
+    this.addCommand({
+      id: "fetch-page-by-url",
+      name: t("cmd.fetchByUrl"),
+      callback: () => new UrlPageModal(this.app, this).open()
+    });
     this.addSettingTab(new ConfluenceWeaverSettingTab(this.app, this));
     this.scheduler.start();
   }
@@ -1057,14 +1491,14 @@ var ConfluenceWeaverPlugin = class extends import_obsidian5.Plugin {
     var _a, _b;
     const active = this.settings.profiles.filter((p) => p.enabled);
     if (active.length === 0) {
-      new import_obsidian5.Notice("Confluence Weaver: No enabled CQL profiles.");
+      new import_obsidian7.Notice("Confluence Weaver: No enabled CQL profiles.");
       return;
     }
     if (!this.settings.domain || !this.settings.token) {
-      new import_obsidian5.Notice("Confluence Weaver: Configure domain and token in settings first.");
+      new import_obsidian7.Notice("Confluence Weaver: Configure domain and token in settings first.");
       return;
     }
-    new import_obsidian5.Notice(t("notice.syncing"));
+    new import_obsidian7.Notice(t("notice.syncing"));
     const client = new ConfluenceClient(this.settings);
     const fm = new FileManager(this.app);
     const allStats = [];
@@ -1092,10 +1526,12 @@ var ConfluenceWeaverPlugin = class extends import_obsidian5.Plugin {
                 continue;
               }
             }
+            const attachmentMap = this.settings.downloadAttachments ? await this.downloadPageAttachments(page, profile.folder, client, fm) : void 0;
             const content = buildMarkdown(
               page,
               this.settings,
-              forceOverwrite ? void 0 : existing != null ? existing : void 0
+              forceOverwrite ? void 0 : existing != null ? existing : void 0,
+              attachmentMap
             );
             if (existing && content === existing) {
               stats.skipped++;
@@ -1110,14 +1546,14 @@ var ConfluenceWeaverPlugin = class extends import_obsidian5.Plugin {
         }
       } catch (e) {
         console.error(`Confluence Weaver: profile "${profile.name}"`, e);
-        new import_obsidian5.Notice(`${t("notice.syncFailed")}${e.message}`);
+        new import_obsidian7.Notice(`${t("notice.syncFailed")}${e.message}`);
         stats.errors++;
       }
       allStats.push(stats);
     }
     this.syncStats = allStats;
     this.refreshLogView();
-    new import_obsidian5.Notice(t("notice.syncDone"));
+    new import_obsidian7.Notice(t("notice.syncDone"));
   }
   refreshLogView() {
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_SYNC_LOG)) {
@@ -1125,13 +1561,88 @@ var ConfluenceWeaverPlugin = class extends import_obsidian5.Plugin {
         leaf.view.setStats(this.syncStats);
     }
   }
+  async fetchByUrl(url, folder, includeChildren, allDescendants, maxPages) {
+    if (!this.settings.domain || !this.settings.token) {
+      new import_obsidian7.Notice("Confluence Weaver: Configure domain and token in settings first.");
+      return;
+    }
+    const client = new ConfluenceClient(this.settings);
+    const fm = new FileManager(this.app);
+    let rootId = client.parsePageId(url);
+    if (!rootId) {
+      rootId = await client.resolveDisplayUrl(url);
+    }
+    if (!rootId) {
+      new import_obsidian7.Notice(t("notice.url.invalidUrl"));
+      return;
+    }
+    new import_obsidian7.Notice(t("notice.url.fetching"));
+    try {
+      const idsToFetch = [rootId];
+      if (includeChildren) {
+        if (allDescendants) {
+          const desc = await client.collectDescendantIds(rootId, maxPages - 1);
+          idsToFetch.push(...desc);
+        } else {
+          const children = await client.getChildPageIds(rootId);
+          idsToFetch.push(...children.slice(0, maxPages - 1));
+        }
+      }
+      let created = 0;
+      let updated = 0;
+      for (const id of idsToFetch) {
+        try {
+          const page = await client.getPage(id);
+          const filePath = fm.resolveFilePath(page, folder, this.settings.folderHierarchy);
+          const existing = await fm.readFile(filePath);
+          const attachmentMap = this.settings.downloadAttachments ? await this.downloadPageAttachments(page, folder, client, fm) : void 0;
+          const content = buildMarkdown(page, this.settings, existing != null ? existing : void 0, attachmentMap);
+          if (existing && content === existing)
+            continue;
+          const result = await fm.writeFile(filePath, content);
+          result === "created" ? created++ : updated++;
+        } catch (e) {
+          console.error(`Confluence Weaver: fetch page ${id}`, e);
+        }
+      }
+      new import_obsidian7.Notice(
+        t("notice.url.done").replace("{created}", String(created)).replace("{updated}", String(updated))
+      );
+    } catch (e) {
+      new import_obsidian7.Notice(`${t("notice.url.failed")}${e.message}`);
+    }
+  }
+  /**
+   * Download image attachments for a page and return a filename→vaultPath map.
+   * Skips files that are already up-to-date (existing binary untouched).
+   */
+  async downloadPageAttachments(page, baseFolder, client, fm) {
+    const map = /* @__PURE__ */ new Map();
+    try {
+      const attachments = await client.getPageAttachments(page.id);
+      for (const att of attachments) {
+        const safeName = att.title.replace(/[\\/:*?"<>|]/g, "_");
+        const vaultPath = baseFolder ? `${baseFolder}/_attachments/${page.id}/${safeName}` : `_attachments/${page.id}/${safeName}`;
+        try {
+          const data = await client.downloadAttachment(att._links.download);
+          await fm.writeBinaryFile(vaultPath, data);
+          map.set(att.title, vaultPath);
+        } catch (e) {
+          console.error(`Confluence Weaver: attachment ${att.title}`, e);
+        }
+      }
+    } catch (e) {
+      console.error(`Confluence Weaver: getPageAttachments ${page.id}`, e);
+    }
+    return map;
+  }
   async runJiraWeaverBridge() {
-    new import_obsidian5.Notice(t("notice.linkJira"));
+    new import_obsidian7.Notice(t("notice.linkJira"));
     try {
       const count = await linkJiraPages(this.app);
-      new import_obsidian5.Notice(t("notice.linkJiraDone").replace("{count}", String(count)));
+      new import_obsidian7.Notice(t("notice.linkJiraDone").replace("{count}", String(count)));
     } catch (e) {
-      new import_obsidian5.Notice(`${t("notice.linkJiraFailed")}${e.message}`);
+      new import_obsidian7.Notice(`${t("notice.linkJiraFailed")}${e.message}`);
     }
   }
   async openSyncLog() {

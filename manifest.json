@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "minAppVersion": "1.7.0",
   "description": "Sync Confluence pages to your Vault",
-  "author": "Hyukjin Kwon",
+  "author": "GS-AX",
   "authorUrl": "https://github.com/GS-AX",
   "isDesktopOnly": false
 }
