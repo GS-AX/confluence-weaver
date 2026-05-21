@@ -132,6 +132,13 @@ var en = {
   "setting.wikiLinks.desc": "Replace [[ac:link]] with Obsidian [[wiki-link]] during conversion",
   "setting.downloadAttachments": "Download images",
   "setting.downloadAttachments.desc": "Save attached images to _attachments/{pageId}/ and embed them locally",
+  "setting.language": "Language",
+  "setting.language.desc": "Interface language (restart not required)",
+  "setting.language.auto": "Auto (system)",
+  "setting.language.en": "English",
+  "setting.language.ko": "\uD55C\uAD6D\uC5B4",
+  "setting.language.ja": "\u65E5\u672C\u8A9E",
+  "setting.language.zh": "\u7B80\u4F53\u4E2D\u6587",
   "setting.advanced": "Advanced",
   "setting.maxBodyLength": "Max body length (chars)",
   "setting.maxBodyLength.desc": "0 = unlimited",
@@ -219,6 +226,13 @@ var ko = {
   "setting.wikiLinks.desc": "\uBCC0\uD658 \uC2DC [[ac:link]]\uB97C Obsidian [[wiki-link]]\uB85C \uB300\uCCB4",
   "setting.downloadAttachments": "\uC774\uBBF8\uC9C0 \uB2E4\uC6B4\uB85C\uB4DC",
   "setting.downloadAttachments.desc": "\uCCA8\uBD80 \uC774\uBBF8\uC9C0\uB97C _attachments/{pageId}/ \uD3F4\uB354\uC5D0 \uC800\uC7A5\uD558\uACE0 \uB85C\uCEEC \uC784\uBCA0\uB4DC\uB85C \uBCC0\uD658",
+  "setting.language": "\uC5B8\uC5B4",
+  "setting.language.desc": "\uC778\uD130\uD398\uC774\uC2A4 \uC5B8\uC5B4 (\uC7AC\uC2DC\uC791 \uBD88\uD544\uC694)",
+  "setting.language.auto": "\uC790\uB3D9 (\uC2DC\uC2A4\uD15C)",
+  "setting.language.en": "English",
+  "setting.language.ko": "\uD55C\uAD6D\uC5B4",
+  "setting.language.ja": "\u65E5\u672C\u8A9E",
+  "setting.language.zh": "\u7B80\u4F53\u4E2D\u6587",
   "setting.advanced": "\uACE0\uAE09",
   "setting.maxBodyLength": "\uCD5C\uB300 \uBCF8\uBB38 \uAE38\uC774 (\uBB38\uC790)",
   "setting.maxBodyLength.desc": "0 = \uC81C\uD55C \uC5C6\uC74C",
@@ -306,6 +320,13 @@ var ja = {
   "setting.wikiLinks.desc": "\u5909\u63DB\u6642\u306B[[ac:link]]\u3092Obsidian [[wiki-link]]\u306B\u7F6E\u63DB",
   "setting.downloadAttachments": "\u753B\u50CF\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9",
   "setting.downloadAttachments.desc": "\u6DFB\u4ED8\u753B\u50CF\u3092 _attachments/{pageId}/ \u306B\u4FDD\u5B58\u3057\u3066\u30ED\u30FC\u30AB\u30EB\u3067\u57CB\u3081\u8FBC\u3080",
+  "setting.language": "\u8A00\u8A9E",
+  "setting.language.desc": "\u30A4\u30F3\u30BF\u30FC\u30D5\u30A7\u30FC\u30B9\u8A00\u8A9E\uFF08\u518D\u8D77\u52D5\u4E0D\u8981\uFF09",
+  "setting.language.auto": "\u81EA\u52D5\uFF08\u30B7\u30B9\u30C6\u30E0\uFF09",
+  "setting.language.en": "English",
+  "setting.language.ko": "\uD55C\uAD6D\uC5B4",
+  "setting.language.ja": "\u65E5\u672C\u8A9E",
+  "setting.language.zh": "\u7B80\u4F53\u4E2D\u6587",
   "setting.advanced": "\u8A73\u7D30\u8A2D\u5B9A",
   "setting.maxBodyLength": "\u672C\u6587\u306E\u6700\u5927\u6587\u5B57\u6570",
   "setting.maxBodyLength.desc": "0 = \u5236\u9650\u306A\u3057",
@@ -393,6 +414,13 @@ var zh = {
   "setting.wikiLinks.desc": "\u8F6C\u6362\u65F6\u5C06 [[ac:link]] \u66FF\u6362\u4E3A Obsidian [[wiki-link]]",
   "setting.downloadAttachments": "\u4E0B\u8F7D\u56FE\u7247",
   "setting.downloadAttachments.desc": "\u5C06\u9644\u4EF6\u56FE\u7247\u4FDD\u5B58\u5230 _attachments/{pageId}/ \u5E76\u4F7F\u7528\u672C\u5730\u5D4C\u5165",
+  "setting.language": "\u8BED\u8A00",
+  "setting.language.desc": "\u754C\u9762\u8BED\u8A00\uFF08\u65E0\u9700\u91CD\u542F\uFF09",
+  "setting.language.auto": "\u81EA\u52A8\uFF08\u7CFB\u7EDF\uFF09",
+  "setting.language.en": "English",
+  "setting.language.ko": "\uD55C\uAD6D\uC5B4",
+  "setting.language.ja": "\u65E5\u672C\u8A9E",
+  "setting.language.zh": "\u7B80\u4F53\u4E2D\u6587",
   "setting.advanced": "\u9AD8\u7EA7\u8BBE\u7F6E",
   "setting.maxBodyLength": "\u6700\u5927\u6B63\u6587\u957F\u5EA6 (\u5B57\u7B26)",
   "setting.maxBodyLength.desc": "0 = \u4E0D\u9650\u5236",
@@ -449,7 +477,13 @@ var zh_default = zh;
 
 // src/i18n/index.ts
 var LOCALES = { en: en_default, ko: ko_default, ja: ja_default, zh: zh_default };
+var overrideLocale = null;
+function setLocale(locale) {
+  overrideLocale = locale === "auto" ? null : locale;
+}
 function detectLocale() {
+  if (overrideLocale)
+    return overrideLocale;
   const lang = window.navigator.language.toLowerCase();
   if (lang.startsWith("ko"))
     return "ko";
@@ -1188,6 +1222,14 @@ var ConfluenceWeaverSettingTab = class extends import_obsidian5.PluginSettingTab
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: t("setting.title") });
+    new import_obsidian5.Setting(containerEl).setName(t("setting.language")).setDesc(t("setting.language.desc")).addDropdown(
+      (drop) => drop.addOption("auto", t("setting.language.auto")).addOption("en", t("setting.language.en")).addOption("ko", t("setting.language.ko")).addOption("ja", t("setting.language.ja")).addOption("zh", t("setting.language.zh")).setValue(this.plugin.settings.language).onChange(async (v) => {
+        this.plugin.settings.language = v;
+        await this.plugin.saveSettings();
+        setLocale(this.plugin.settings.language);
+        this.display();
+      })
+    );
     containerEl.createEl("h3", { text: t("setting.connection") });
     new import_obsidian5.Setting(containerEl).setName(t("setting.domain")).setDesc(t("setting.domain.desc")).addText(
       (text) => text.setPlaceholder("https://mycompany.atlassian.net/wiki").setValue(this.plugin.settings.domain).onChange(async (v) => {
@@ -1438,7 +1480,8 @@ var DEFAULT_SETTINGS = {
   maxBodyLength: 0,
   wikiLinks: true,
   fieldMappings: [],
-  downloadAttachments: false
+  downloadAttachments: false,
+  language: "auto"
 };
 var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
   constructor() {
@@ -1449,6 +1492,7 @@ var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    setLocale(this.settings.language);
     this.registerView(VIEW_TYPE_SYNC_LOG, (leaf) => new SyncLogView(leaf));
     this.addCommand({
       id: "sync-pages",

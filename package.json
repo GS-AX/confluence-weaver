@@ -1,6 +1,6 @@
 {
   "name": "confluence-weaver",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Sync Confluence pages to your Vault",
   "main": "main.js",
   "scripts": {

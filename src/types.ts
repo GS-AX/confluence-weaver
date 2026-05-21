@@ -35,6 +35,7 @@ export interface ConfluenceWeaverSettings {
   wikiLinks: boolean;
   fieldMappings: FieldMapping[];
   downloadAttachments: boolean;
+  language: 'auto' | 'en' | 'ko' | 'ja' | 'zh';
 }
 
 export interface ConfluencePage {

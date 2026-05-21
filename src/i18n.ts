@@ -1,1 +1,1 @@
-export { t } from './i18n/index';
+export { t, setLocale } from './i18n/index';

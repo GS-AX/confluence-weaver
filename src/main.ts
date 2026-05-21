@@ -8,7 +8,7 @@ import { buildMarkdown } from './markdownBuilder';
 import { ConfluenceWeaverSettingTab } from './settings';
 import { SyncScheduler } from './syncScheduler';
 import { SyncLogView, VIEW_TYPE_SYNC_LOG } from './syncLogView';
-import { t } from './i18n';
+import { t, setLocale } from './i18n';
 
 const DEFAULT_SETTINGS: ConfluenceWeaverSettings = {
   domain: '',
@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: ConfluenceWeaverSettings = {
   wikiLinks: true,
   fieldMappings: [],
   downloadAttachments: false,
+  language: 'auto',
 };
 
 export default class ConfluenceWeaverPlugin extends Plugin {
@@ -33,6 +34,7 @@ export default class ConfluenceWeaverPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
+    setLocale(this.settings.language);
 
     this.registerView(VIEW_TYPE_SYNC_LOG, leaf => new SyncLogView(leaf));
 

@@ -1,7 +1,7 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type ConfluenceWeaverPlugin from './main';
 import { CqlProfile } from './types';
-import { t } from './i18n';
+import { t, setLocale } from './i18n';
 import { CqlProfileModal } from './cqlProfileModal';
 import { ConfluenceClient } from './confluenceClient';
 
@@ -15,6 +15,25 @@ export class ConfluenceWeaverSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     containerEl.createEl('h2', { text: t('setting.title') });
+
+    new Setting(containerEl)
+      .setName(t('setting.language'))
+      .setDesc(t('setting.language.desc'))
+      .addDropdown(drop =>
+        drop
+          .addOption('auto', t('setting.language.auto'))
+          .addOption('en', t('setting.language.en'))
+          .addOption('ko', t('setting.language.ko'))
+          .addOption('ja', t('setting.language.ja'))
+          .addOption('zh', t('setting.language.zh'))
+          .setValue(this.plugin.settings.language)
+          .onChange(async v => {
+            this.plugin.settings.language = v as 'auto' | 'en' | 'ko' | 'ja' | 'zh';
+            await this.plugin.saveSettings();
+            setLocale(this.plugin.settings.language);
+            this.display();
+          })
+      );
 
     // ── Connection ──────────────────────────────────────────────
     containerEl.createEl('h3', { text: t('setting.connection') });
