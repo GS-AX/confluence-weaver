@@ -3,7 +3,7 @@
   "name": "Confluence Weaver",
   "version": "0.3.0",
   "minAppVersion": "1.7.0",
-  "description": "Sync Confluence pages to your Vault",
+  "description": "Sync Confluence pages to your Vault.",
   "author": "GS-AX",
   "authorUrl": "https://github.com/GS-AX",
   "isDesktopOnly": false
