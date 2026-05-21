@@ -4,7 +4,7 @@ Confluence 페이지를 Obsidian Vault에 Markdown 파일로 동기화합니다.
 
 **Confluence Cloud** (Basic 인증)와 **Confluence Data Center / Server** (Bearer 토큰) 모두 지원합니다.
 
-English README: [README.md](README.md)
+English README: [README.md](https://github.com/GS-AX/confluence-weaver/blob/main/README.md)
 
 ---
 
