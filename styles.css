@@ -1,0 +1,45 @@
+.cw-log-heading {
+  margin-bottom: 0.75rem;
+}
+
+.cw-log-empty {
+  color: var(--text-muted);
+}
+
+.cw-log-section {
+  margin-bottom: 1.25rem;
+}
+
+.cw-log-profile {
+  margin: 0 0 0.4rem;
+  color: var(--text-accent);
+}
+
+.cw-log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cw-log-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.cw-log-label {
+  width: 130px;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.cw-log-value {
+  font-weight: 500;
+}
+
+.cw-textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.cw-textarea-mono {
+  font-family: var(--font-monospace);
+}

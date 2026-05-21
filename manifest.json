@@ -1,0 +1,10 @@
+{
+  "id": "confluence-weaver",
+  "name": "Confluence Weaver",
+  "version": "0.1.0",
+  "minAppVersion": "1.7.0",
+  "description": "Sync Confluence pages to your Vault",
+  "author": "Hyukjin Kwon",
+  "authorUrl": "https://github.com/hyukjin78",
+  "isDesktopOnly": false
+}
