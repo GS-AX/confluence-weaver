@@ -1,7 +1,7 @@
 {
   "id": "confluence-weaver",
   "name": "Confluence Weaver",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "minAppVersion": "1.7.0",
   "description": "Sync Confluence pages to your Vault",
   "author": "GS-AX",
