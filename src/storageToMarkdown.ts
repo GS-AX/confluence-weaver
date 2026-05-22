@@ -14,11 +14,15 @@ export interface ConvertOptions {
   attachmentMap?: Map<string, string>;
 }
 
+function escAttr(val: string): string {
+  return val.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
 export function storageToMarkdown(html: string, options: ConvertOptions = {}): string {
   const { wikiLinks = true } = options;
   let s = html;
 
-  // Task lists: <ac:task-list><ac:task>...<ac:task-status>complete</ac:task-status><ac:task-body>text</ac:task-body></ac:task></ac:task-list>
+  // ── Task lists ────────────────────────────────────────────────────────────
   s = s.replace(
     /<ac:task-list[^>]*>([\s\S]*?)<\/ac:task-list>/gi,
     (_m, inner) => {
@@ -28,7 +32,7 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
       while ((tm = taskRe.exec(inner)) !== null) {
         const taskInner = tm[1];
         const statusMatch = taskInner.match(/<ac:task-status[^>]*>([\s\S]*?)<\/ac:task-status>/i);
-        const bodyMatch = taskInner.match(/<ac:task-body[^>]*>([\s\S]*?)<\/ac:task-body>/i);
+        const bodyMatch   = taskInner.match(/<ac:task-body[^>]*>([\s\S]*?)<\/ac:task-body>/i);
         const done = statusMatch?.[1]?.trim().toLowerCase() === 'complete';
         const body = bodyMatch?.[1]?.replace(/<[^>]+>/g, '').trim() ?? '';
         tasks.push(`- [${done ? 'x' : ' '}] ${body}`);
@@ -37,45 +41,179 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
     }
   );
 
-  // Status label: <ac:status ac:title="IN PROGRESS" ac:colour="Blue"/>
+  // ── Status label: <ac:status ac:title="IN PROGRESS" ac:colour="Blue"/> ───
   s = s.replace(
     /<ac:status\b[^>]*\bac:title="([^"]*)"[^>]*\/?>/gi,
     (_m, title) => `**${title}**`
   );
 
-  // Emoticons → strip (keep accessibility)
+  // ── Emoticons → strip ─────────────────────────────────────────────────────
   s = s.replace(/<ac:emoticon[^>]*\/>/gi, '');
 
-  // TOC macro → strip
+  // ── TOC macro → strip ─────────────────────────────────────────────────────
   s = s.replace(
     /<ac:structured-macro[^>]*\bac:name="toc"[^>]*>[\s\S]*?<\/ac:structured-macro>/gi,
     ''
   );
 
-  // Code macro: <ac:structured-macro ac:name="code">
+  // ── Code macro ────────────────────────────────────────────────────────────
   s = s.replace(
     /<ac:structured-macro[^>]*\bac:name="code"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
     (_m, inner) => {
-      const langMatch = inner.match(/<ac:parameter[^>]*\bac:name="language"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
-      const lang = langMatch ? langMatch[1].trim() : '';
+      const langMatch  = inner.match(/<ac:parameter[^>]*\bac:name="language"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const lang       = langMatch ? langMatch[1].trim() : '';
       const cdataMatch = inner.match(/<ac:plain-text-body[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ac:plain-text-body>/i);
-      const textMatch = inner.match(/<ac:plain-text-body[^>]*>([\s\S]*?)<\/ac:plain-text-body>/i);
-      const code = (cdataMatch ?? textMatch)?.[1] ?? '';
+      const textMatch  = inner.match(/<ac:plain-text-body[^>]*>([\s\S]*?)<\/ac:plain-text-body>/i);
+      const code       = (cdataMatch ?? textMatch)?.[1] ?? '';
       return `\n\`\`\`${lang}\n${code}\n\`\`\`\n`;
     }
   );
 
-  // Info/note/warning/tip panels
+  // ── Noformat (plain text block) ───────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="noformat"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const cdataMatch = inner.match(/<ac:plain-text-body[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ac:plain-text-body>/i);
+      const textMatch  = inner.match(/<ac:plain-text-body[^>]*>([\s\S]*?)<\/ac:plain-text-body>/i);
+      const code       = (cdataMatch ?? textMatch)?.[1] ?? '';
+      return `\n\`\`\`\n${code}\n\`\`\`\n`;
+    }
+  );
+
+  // ── Column → extract content + separator (must run BEFORE section) ────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="column"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      return (bodyMatch ? bodyMatch[1] : '') + '\n<hr/>\n';
+    }
+  );
+
+  // ── Section → unwrap (columns inside already emitted separators) ──────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="section"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      return bodyMatch ? bodyMatch[1] : '';
+    }
+  );
+
+  // ── Panel → Obsidian callout ──────────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="panel"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const titleParam = inner.match(/<ac:parameter[^>]*\bac:name="title"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const title      = titleParam?.[1]?.trim() ?? '';
+      const bodyMatch  = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      const body       = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote data-cw-type="abstract" data-cw-title="${escAttr(title)}">${body}</blockquote>`;
+    }
+  );
+
+  // ── Expand → collapsible Obsidian callout ─────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="expand"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const titleParam = inner.match(/<ac:parameter[^>]*\bac:name="title"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const title      = titleParam?.[1]?.trim() ?? 'Details';
+      const bodyMatch  = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      const body       = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote data-cw-type="abstract" data-cw-title="${escAttr(title)}" data-cw-collapse="true">${body}</blockquote>`;
+    }
+  );
+
+  // ── Info / Note / Warning / Tip → typed Obsidian callout ─────────────────
   s = s.replace(
     /<ac:structured-macro[^>]*\bac:name="(info|note|warning|tip)"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
     (_m, type, inner) => {
       const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
-      const body = bodyMatch ? bodyMatch[1] : inner;
-      return `\n> **${type.toUpperCase()}**: ${body.trim()}\n`;
+      const body      = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote data-cw-type="${type}" data-cw-title="">${body}</blockquote>`;
     }
   );
 
-  // Generic remaining macros — keep rich-text-body content if present
+  // ── Excerpt → transparent (just content) ─────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="excerpt"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      return bodyMatch ? bodyMatch[1] : '';
+    }
+  );
+
+  // ── Excerpt-include → italic reference ───────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="excerpt-include"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const pageMatch = inner.match(/ri:content-title="([^"]*)"/i);
+      const page      = pageMatch?.[1] ?? '';
+      return page ? `\n> *Excerpt from [[${page}]]*\n` : '';
+    }
+  );
+
+  // ── Include page → Obsidian embed ────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="include"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const pageMatch = inner.match(/ri:content-title="([^"]*)"/i);
+      const page      = pageMatch?.[1] ?? '';
+      return page ? `\n![[${page}]]\n` : '';
+    }
+  );
+
+  // ── Jira issue macro → bold issue key ────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="jira"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const keyMatch = inner.match(/<ac:parameter[^>]*\bac:name="key"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const key      = keyMatch?.[1]?.trim() ?? '';
+      return key ? `**${key}**` : '';
+    }
+  );
+
+  // ── Anchor macro → HTML anchor ────────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="anchor"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const nameMatch = inner.match(/<ac:parameter[^>]*\bac:name="0"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const name      = nameMatch?.[1]?.trim() ?? '';
+      return name ? `<a id="${name}"></a>` : '';
+    }
+  );
+
+  // ── Quote macro → blockquote ──────────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="quote"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      const body      = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote>${body}</blockquote>`;
+    }
+  );
+
+  // ── Divider → horizontal rule ─────────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="divider"[^>]*(?:\/>|>[\s\S]*?<\/ac:structured-macro>)/gi,
+    '\n<hr/>\n'
+  );
+
+  // ── Widget connector → link ───────────────────────────────────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="widget"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const urlMatch = inner.match(/<ac:parameter[^>]*\bac:name="url"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const url      = urlMatch?.[1]?.trim() ?? '';
+      return url ? `[Embedded content](${url})` : '';
+    }
+  );
+
+  // ── Strip: macros with no meaningful Markdown equivalent ─────────────────
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="(?:children|pagetree|page-tree|recently-updated|activity-stream|livesearch|profile-picture|roadmap|chart|html|iframe|navitabs|create-from-template|blog-posts|contributors|contributors-summary|space-list|recently-updated-dashboard|details|details-summary)"[^>]*>[\s\S]*?<\/ac:structured-macro>/gi,
+    ''
+  );
+
+  // ── Generic remaining macros — keep rich-text-body content if present ─────
   s = s.replace(
     /<ac:structured-macro[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
     (_m, inner) => {
@@ -84,21 +222,35 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
     }
   );
 
-  // Confluence internal page link
+  // ── User mentions — Server (ri:username) ──────────────────────────────────
+  s = s.replace(
+    /<ac:link[^>]*>\s*<ri:user[^>]*\bri:username="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>[\s\S]*?<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, username) => `@${username}`
+  );
+
+  // ── User mentions — Cloud (ri:account-id), use link-body display name ─────
+  s = s.replace(
+    /<ac:link[^>]*>\s*<ri:user[^>]*\bri:account-id="[^"]*"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, body) => {
+      const name = body?.replace(/<[^>]+>/g, '').trim();
+      return name ? `@${name}` : '@user';
+    }
+  );
+
+  // ── Confluence internal page link ─────────────────────────────────────────
   if (wikiLinks) {
     s = s.replace(
       /<ac:link[^>]*>\s*<ri:page[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
       (_m, title) => `[[${title}]]`
     );
   } else {
-    // Render as plain text from the link body, or the title
     s = s.replace(
       /<ac:link[^>]*>\s*<ri:page[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
       (_m, title, body) => body?.replace(/<[^>]+>/g, '') || title
     );
   }
 
-  // External URL link
+  // ── External URL link ─────────────────────────────────────────────────────
   s = s.replace(
     /<ac:link[^>]*>\s*<ri:url[^>]*\bri:value="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
     (_m, url, body) => {
@@ -107,7 +259,7 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
     }
   );
 
-  // Attachment image — use local vault path if downloaded, otherwise filename fallback
+  // ── Attachment image ──────────────────────────────────────────────────────
   s = s.replace(
     /<ac:image[^>]*>\s*<ri:attachment[^>]*\bri:filename="([^"]*)"[^>]*\/?>\s*<\/ac:image>/gi,
     (_m, filename) => {
@@ -116,28 +268,26 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
     }
   );
 
-  // External URL image
+  // ── External URL image ────────────────────────────────────────────────────
   s = s.replace(
     /<ac:image[^>]*>\s*<ri:url[^>]*\bri:value="([^"]*)"[^>]*\/?>\s*<\/ac:image>/gi,
     (_m, url) => `![](${url})`
   );
 
-  // Strip remaining ac:/ri: tags
+  // ── Strip remaining ac:/ri: tags ─────────────────────────────────────────
   s = s.replace(/<\/?(?:ac|ri):[^>]*>/gi, '');
 
   const parser = new DOMParser();
-  const doc = parser.parseFromString(`<body>${s}</body>`, 'text/html');
+  const doc    = parser.parseFromString(`<body>${s}</body>`, 'text/html');
 
   return nodeToMd(doc.body).replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function nodeToMd(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return node.textContent ?? '';
-  }
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
 
-  const el = node as Element;
+  const el  = node as Element;
   const tag = el.tagName.toLowerCase();
   const kids = () => Array.from(el.childNodes).map(nodeToMd).join('');
 
@@ -191,8 +341,18 @@ function nodeToMd(node: Node): string {
     case 'ol': return `\n${renderList(el, true)}\n`;
     case 'li': return kids();
 
-    case 'blockquote':
-      return `\n> ${kids().trim().replace(/\n/g, '\n> ')}\n`;
+    case 'blockquote': {
+      const cwType     = el.getAttribute('data-cw-type');
+      const cwTitle    = el.getAttribute('data-cw-title') ?? '';
+      const cwCollapse = el.getAttribute('data-cw-collapse') === 'true';
+      const content    = kids().trim();
+      if (cwType) {
+        const collapse = cwCollapse ? '-' : '';
+        const lines    = content.split('\n').map(l => `> ${l}`).join('\n');
+        return `\n> [!${cwType}]${collapse} ${cwTitle}\n${lines}\n`;
+      }
+      return `\n> ${content.replace(/\n/g, '\n> ')}\n`;
+    }
 
     case 'table': return `\n${renderTable(el)}\n`;
     case 'thead':
@@ -211,7 +371,7 @@ function renderList(el: Element, ordered: boolean): string {
     if (child.nodeType !== Node.ELEMENT_NODE) continue;
     const tag = (child as Element).tagName.toLowerCase();
     if (tag !== 'li') continue;
-    const prefix = ordered ? `${idx++}. ` : '- ';
+    const prefix  = ordered ? `${idx++}. ` : '- ';
     const content = nodeToMd(child).trim().replace(/\n/g, '\n   ');
     lines.push(`${prefix}${content}`);
   }

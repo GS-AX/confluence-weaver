@@ -825,6 +825,9 @@ var FileManager = class {
 var SECTION_MARKER = "[confluence-weaver section end]";
 
 // src/storageToMarkdown.ts
+function escAttr(val) {
+  return val.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
 function storageToMarkdown(html, options = {}) {
   const { wikiLinks = true } = options;
   let s = html;
@@ -872,20 +875,151 @@ ${code}
     }
   );
   s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="noformat"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a, _b;
+      const cdataMatch = inner.match(/<ac:plain-text-body[^>]*><!\[CDATA\[([\s\S]*?)\]\]><\/ac:plain-text-body>/i);
+      const textMatch = inner.match(/<ac:plain-text-body[^>]*>([\s\S]*?)<\/ac:plain-text-body>/i);
+      const code = (_b = (_a = cdataMatch != null ? cdataMatch : textMatch) == null ? void 0 : _a[1]) != null ? _b : "";
+      return `
+\`\`\`
+${code}
+\`\`\`
+`;
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="column"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      return (bodyMatch ? bodyMatch[1] : "") + "\n<hr/>\n";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="section"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      return bodyMatch ? bodyMatch[1] : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="panel"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a, _b;
+      const titleParam = inner.match(/<ac:parameter[^>]*\bac:name="title"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const title = (_b = (_a = titleParam == null ? void 0 : titleParam[1]) == null ? void 0 : _a.trim()) != null ? _b : "";
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      const body = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote data-cw-type="abstract" data-cw-title="${escAttr(title)}">${body}</blockquote>`;
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="expand"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a, _b;
+      const titleParam = inner.match(/<ac:parameter[^>]*\bac:name="title"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const title = (_b = (_a = titleParam == null ? void 0 : titleParam[1]) == null ? void 0 : _a.trim()) != null ? _b : "Details";
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      const body = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote data-cw-type="abstract" data-cw-title="${escAttr(title)}" data-cw-collapse="true">${body}</blockquote>`;
+    }
+  );
+  s = s.replace(
     /<ac:structured-macro[^>]*\bac:name="(info|note|warning|tip)"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
     (_m, type, inner) => {
       const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
       const body = bodyMatch ? bodyMatch[1] : inner;
-      return `
-> **${type.toUpperCase()}**: ${body.trim()}
-`;
+      return `<blockquote data-cw-type="${type}" data-cw-title="">${body}</blockquote>`;
     }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="excerpt"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      return bodyMatch ? bodyMatch[1] : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="excerpt-include"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a;
+      const pageMatch = inner.match(/ri:content-title="([^"]*)"/i);
+      const page = (_a = pageMatch == null ? void 0 : pageMatch[1]) != null ? _a : "";
+      return page ? `
+> *Excerpt from [[${page}]]*
+` : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="include"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a;
+      const pageMatch = inner.match(/ri:content-title="([^"]*)"/i);
+      const page = (_a = pageMatch == null ? void 0 : pageMatch[1]) != null ? _a : "";
+      return page ? `
+![[${page}]]
+` : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="jira"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a, _b;
+      const keyMatch = inner.match(/<ac:parameter[^>]*\bac:name="key"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const key = (_b = (_a = keyMatch == null ? void 0 : keyMatch[1]) == null ? void 0 : _a.trim()) != null ? _b : "";
+      return key ? `**${key}**` : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="anchor"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a, _b;
+      const nameMatch = inner.match(/<ac:parameter[^>]*\bac:name="0"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const name = (_b = (_a = nameMatch == null ? void 0 : nameMatch[1]) == null ? void 0 : _a.trim()) != null ? _b : "";
+      return name ? `<a id="${name}"></a>` : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="quote"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
+      const body = bodyMatch ? bodyMatch[1] : inner;
+      return `<blockquote>${body}</blockquote>`;
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="divider"[^>]*(?:\/>|>[\s\S]*?<\/ac:structured-macro>)/gi,
+    "\n<hr/>\n"
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="widget"[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
+    (_m, inner) => {
+      var _a, _b;
+      const urlMatch = inner.match(/<ac:parameter[^>]*\bac:name="url"[^>]*>([\s\S]*?)<\/ac:parameter>/i);
+      const url = (_b = (_a = urlMatch == null ? void 0 : urlMatch[1]) == null ? void 0 : _a.trim()) != null ? _b : "";
+      return url ? `[Embedded content](${url})` : "";
+    }
+  );
+  s = s.replace(
+    /<ac:structured-macro[^>]*\bac:name="(?:children|pagetree|page-tree|recently-updated|activity-stream|livesearch|profile-picture|roadmap|chart|html|iframe|navitabs|create-from-template|blog-posts|contributors|contributors-summary|space-list|recently-updated-dashboard|details|details-summary)"[^>]*>[\s\S]*?<\/ac:structured-macro>/gi,
+    ""
   );
   s = s.replace(
     /<ac:structured-macro[^>]*>([\s\S]*?)<\/ac:structured-macro>/gi,
     (_m, inner) => {
       const bodyMatch = inner.match(/<ac:rich-text-body[^>]*>([\s\S]*?)<\/ac:rich-text-body>/i);
       return bodyMatch ? bodyMatch[1] : "";
+    }
+  );
+  s = s.replace(
+    /<ac:link[^>]*>\s*<ri:user[^>]*\bri:username="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>[\s\S]*?<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, username) => `@${username}`
+  );
+  s = s.replace(
+    /<ac:link[^>]*>\s*<ri:user[^>]*\bri:account-id="[^"]*"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, body) => {
+      const name = body == null ? void 0 : body.replace(/<[^>]+>/g, "").trim();
+      return name ? `@${name}` : "@user";
     }
   );
   if (wikiLinks) {
@@ -924,10 +1058,9 @@ ${code}
   return nodeToMd(doc.body).replace(/\n{3,}/g, "\n\n").trim();
 }
 function nodeToMd(node) {
-  var _a, _b, _c, _d, _e, _f, _g, _h;
-  if (node.nodeType === Node.TEXT_NODE) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+  if (node.nodeType === Node.TEXT_NODE)
     return (_a = node.textContent) != null ? _a : "";
-  }
   if (node.nodeType !== Node.ELEMENT_NODE)
     return "";
   const el = node;
@@ -1017,10 +1150,23 @@ ${renderList(el, true)}
 `;
     case "li":
       return kids();
-    case "blockquote":
-      return `
-> ${kids().trim().replace(/\n/g, "\n> ")}
+    case "blockquote": {
+      const cwType = el.getAttribute("data-cw-type");
+      const cwTitle = (_i = el.getAttribute("data-cw-title")) != null ? _i : "";
+      const cwCollapse = el.getAttribute("data-cw-collapse") === "true";
+      const content = kids().trim();
+      if (cwType) {
+        const collapse = cwCollapse ? "-" : "";
+        const lines = content.split("\n").map((l) => `> ${l}`).join("\n");
+        return `
+> [!${cwType}]${collapse} ${cwTitle}
+${lines}
 `;
+      }
+      return `
+> ${content.replace(/\n/g, "\n> ")}
+`;
+    }
     case "table":
       return `
 ${renderTable(el)}
