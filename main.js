@@ -608,12 +608,25 @@ var ConfluenceClient = class {
   async testConnection() {
     await this.get("/rest/api/space?limit=1");
   }
-  async searchCQL(cql, limit = 50) {
+  async searchCQL(cql, limit = 50, expand = "version,space,ancestors") {
     var _a;
     const data = await this.get(
-      `/rest/api/content/search?cql=${encodeURIComponent(cql)}&limit=${limit}&expand=version,space,ancestors`
+      `/rest/api/content/search?cql=${encodeURIComponent(cql)}&limit=${limit}&expand=${encodeURIComponent(expand)}`
     );
     return (_a = data.results) != null ? _a : [];
+  }
+  async getPages(ids, expand = "body.storage,version,ancestors,space,metadata.labels,history") {
+    if (ids.length === 0)
+      return [];
+    const batchSize = 50;
+    const pages = [];
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batchIds = ids.slice(i, i + batchSize);
+      const cql = `id in (${batchIds.map((id) => `"${id}"`).join(",")})`;
+      const results = await this.searchCQL(cql, batchIds.length, expand);
+      pages.push(...results);
+    }
+    return pages;
   }
   async getPage(id) {
     return this.get(
@@ -1703,10 +1716,13 @@ var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
         lastSync: new Date().toISOString()
       };
       try {
-        const summaries = await client.searchCQL(profile.cql, profile.maxPages);
-        for (const summary of summaries) {
+        const pages = await client.searchCQL(
+          profile.cql,
+          profile.maxPages,
+          "body.storage,version,ancestors,space,metadata.labels,history"
+        );
+        for (const page of pages) {
           try {
-            const page = await client.getPage(summary.id);
             const filePath = fm.resolveFilePath(page, profile.folder, this.settings.folderHierarchy);
             const existing = await fm.readFile(filePath);
             if (!forceOverwrite && existing) {
@@ -1730,7 +1746,7 @@ var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
             const result = await fm.writeFile(filePath, content);
             result === "created" ? stats.created++ : stats.updated++;
           } catch (e) {
-            console.error(`Confluence Weaver: page ${summary.id}`, e);
+            console.error(`Confluence Weaver: page ${page.id}`, e);
             stats.errors++;
           }
         }
@@ -1780,9 +1796,12 @@ var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
       }
       let created = 0;
       let updated = 0;
-      for (const id of idsToFetch) {
+      const pages = await client.getPages(
+        idsToFetch,
+        "body.storage,version,ancestors,space,metadata.labels,history"
+      );
+      for (const page of pages) {
         try {
-          const page = await client.getPage(id);
           const filePath = fm.resolveFilePath(page, folder, this.settings.folderHierarchy);
           const existing = await fm.readFile(filePath);
           const attachmentMap = this.settings.downloadAttachments ? await this.downloadPageAttachments(page, folder, client, fm) : void 0;
@@ -1792,7 +1811,7 @@ var ConfluenceWeaverPlugin = class extends import_obsidian7.Plugin {
           const result = await fm.writeFile(filePath, content);
           result === "created" ? created++ : updated++;
         } catch (e) {
-          console.error(`Confluence Weaver: fetch page ${id}`, e);
+          console.error(`Confluence Weaver: fetch page ${page.id}`, e);
         }
       }
       new import_obsidian7.Notice(

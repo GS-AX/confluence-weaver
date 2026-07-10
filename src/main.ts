@@ -114,11 +114,14 @@ export default class ConfluenceWeaverPlugin extends Plugin {
       };
 
       try {
-        const summaries = await client.searchCQL(profile.cql, profile.maxPages);
+        const pages = await client.searchCQL(
+          profile.cql,
+          profile.maxPages,
+          'body.storage,version,ancestors,space,metadata.labels,history'
+        );
 
-        for (const summary of summaries) {
+        for (const page of pages) {
           try {
-            const page = await client.getPage(summary.id);
             const filePath = fm.resolveFilePath(page, profile.folder, this.settings.folderHierarchy);
             const existing = await fm.readFile(filePath);
 
@@ -151,7 +154,7 @@ export default class ConfluenceWeaverPlugin extends Plugin {
             const result = await fm.writeFile(filePath, content);
             result === 'created' ? stats.created++ : stats.updated++;
           } catch (e) {
-            console.error(`Confluence Weaver: page ${summary.id}`, e);
+            console.error(`Confluence Weaver: page ${page.id}`, e);
             stats.errors++;
           }
         }
@@ -219,9 +222,13 @@ export default class ConfluenceWeaverPlugin extends Plugin {
       let created = 0;
       let updated = 0;
 
-      for (const id of idsToFetch) {
+      const pages = await client.getPages(
+        idsToFetch,
+        'body.storage,version,ancestors,space,metadata.labels,history'
+      );
+
+      for (const page of pages) {
         try {
-          const page = await client.getPage(id);
           const filePath = fm.resolveFilePath(page, folder, this.settings.folderHierarchy);
           const existing = await fm.readFile(filePath);
           const attachmentMap = this.settings.downloadAttachments
@@ -232,7 +239,7 @@ export default class ConfluenceWeaverPlugin extends Plugin {
           const result = await fm.writeFile(filePath, content);
           result === 'created' ? created++ : updated++;
         } catch (e) {
-          console.error(`Confluence Weaver: fetch page ${id}`, e);
+          console.error(`Confluence Weaver: fetch page ${page.id}`, e);
         }
       }
 
