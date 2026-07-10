@@ -843,7 +843,8 @@ function storageToMarkdown(html, options = {}) {
         const statusMatch = taskInner.match(/<ac:task-status[^>]*>([\s\S]*?)<\/ac:task-status>/i);
         const bodyMatch = taskInner.match(/<ac:task-body[^>]*>([\s\S]*?)<\/ac:task-body>/i);
         const done = ((_a = statusMatch == null ? void 0 : statusMatch[1]) == null ? void 0 : _a.trim().toLowerCase()) === "complete";
-        const body = (_c = (_b = bodyMatch == null ? void 0 : bodyMatch[1]) == null ? void 0 : _b.replace(/<[^>]+>/g, "").trim()) != null ? _c : "";
+        let body = (_c = (_b = bodyMatch == null ? void 0 : bodyMatch[1]) == null ? void 0 : _b.trim()) != null ? _c : "";
+        body = body.replace(/<\/?p\b[^>]*>/gi, "");
         tasks.push(`- [${done ? "x" : " "}] ${body}`);
       }
       return tasks.join("\n") + "\n";
@@ -1022,17 +1023,49 @@ ${code}
       return name ? `@${name}` : "@user";
     }
   );
-  if (wikiLinks) {
-    s = s.replace(
-      /<ac:link[^>]*>\s*<ri:page[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
-      (_m, title) => `[[${title}]]`
-    );
-  } else {
-    s = s.replace(
-      /<ac:link[^>]*>\s*<ri:page[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
-      (_m, title, body) => (body == null ? void 0 : body.replace(/<[^>]+>/g, "")) || title
-    );
-  }
+  s = s.replace(
+    /<ac:link([^>]*)>\s*<ri:(?:page|blogpost)[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, linkAttrs, title, body) => {
+      const anchorMatch = linkAttrs.match(/\bac:anchor="([^"]*)"/);
+      const anchor = anchorMatch ? `#${anchorMatch[1]}` : "";
+      const text = body == null ? void 0 : body.replace(/<[^>]+>/g, "").trim();
+      const target = `${title}${anchor}`;
+      if (wikiLinks) {
+        return text && text !== title ? `[[${target}|${text}]]` : `[[${target}]]`;
+      } else {
+        return text || title;
+      }
+    }
+  );
+  s = s.replace(
+    /<ac:link([^>]*)>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (m, linkAttrs, body) => {
+      const anchorMatch = linkAttrs.match(/\bac:anchor="([^"]*)"/);
+      if (!anchorMatch)
+        return m;
+      const anchor = anchorMatch[1];
+      const text = (body == null ? void 0 : body.replace(/<[^>]+>/g, "").trim()) || anchor;
+      if (wikiLinks) {
+        return `[[#${anchor}|${text}]]`;
+      } else {
+        return `[${text}](#${anchor})`;
+      }
+    }
+  );
+  s = s.replace(
+    /<ac:link([^>]*)>\s*<ri:attachment[^>]*\bri:filename="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, _linkAttrs, filename, body) => {
+      var _a;
+      const text = (body == null ? void 0 : body.replace(/<[^>]+>/g, "").trim()) || filename;
+      const vaultPath = (_a = options.attachmentMap) == null ? void 0 : _a.get(filename);
+      const target = vaultPath || filename;
+      if (wikiLinks) {
+        return `[[${target}|${text}]]`;
+      } else {
+        return `[${text}](${target})`;
+      }
+    }
+  );
   s = s.replace(
     /<ac:link[^>]*>\s*<ri:url[^>]*\bri:value="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
     (_m, url, body) => {

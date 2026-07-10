@@ -34,7 +34,8 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
         const statusMatch = taskInner.match(/<ac:task-status[^>]*>([\s\S]*?)<\/ac:task-status>/i);
         const bodyMatch   = taskInner.match(/<ac:task-body[^>]*>([\s\S]*?)<\/ac:task-body>/i);
         const done = statusMatch?.[1]?.trim().toLowerCase() === 'complete';
-        const body = bodyMatch?.[1]?.replace(/<[^>]+>/g, '').trim() ?? '';
+        let body = bodyMatch?.[1]?.trim() ?? '';
+        body = body.replace(/<\/?p\b[^>]*>/gi, ''); // Remove block-level paragraph tags to avoid breaking list item formatting
         tasks.push(`- [${done ? 'x' : ' '}] ${body}`);
       }
       return tasks.join('\n') + '\n';
@@ -237,18 +238,52 @@ export function storageToMarkdown(html: string, options: ConvertOptions = {}): s
     }
   );
 
-  // ── Confluence internal page link ─────────────────────────────────────────
-  if (wikiLinks) {
-    s = s.replace(
-      /<ac:link[^>]*>\s*<ri:page[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
-      (_m, title) => `[[${title}]]`
-    );
-  } else {
-    s = s.replace(
-      /<ac:link[^>]*>\s*<ri:page[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
-      (_m, title, body) => body?.replace(/<[^>]+>/g, '') || title
-    );
-  }
+  // ── Confluence internal page link (supports page, blogpost, anchor, and alias) ──
+  s = s.replace(
+    /<ac:link([^>]*)>\s*<ri:(?:page|blogpost)[^>]*\bri:content-title="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, linkAttrs, title, body) => {
+      const anchorMatch = linkAttrs.match(/\bac:anchor="([^"]*)"/);
+      const anchor = anchorMatch ? `#${anchorMatch[1]}` : '';
+      const text = body?.replace(/<[^>]+>/g, '').trim();
+      const target = `${title}${anchor}`;
+      if (wikiLinks) {
+        return text && text !== title ? `[[${target}|${text}]]` : `[[${target}]]`;
+      } else {
+        return text || title;
+      }
+    }
+  );
+
+  // ── Same-page anchor link ────────────────────────────────────────────────
+  s = s.replace(
+    /<ac:link([^>]*)>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (m, linkAttrs, body) => {
+      const anchorMatch = linkAttrs.match(/\bac:anchor="([^"]*)"/);
+      if (!anchorMatch) return m;
+      const anchor = anchorMatch[1];
+      const text = body?.replace(/<[^>]+>/g, '').trim() || anchor;
+      if (wikiLinks) {
+        return `[[#${anchor}|${text}]]`;
+      } else {
+        return `[${text}](#${anchor})`;
+      }
+    }
+  );
+
+  // ── Attachment link (non-image files) ────────────────────────────────────
+  s = s.replace(
+    /<ac:link([^>]*)>\s*<ri:attachment[^>]*\bri:filename="([^"]*)"[^>]*\/?>\s*(?:<ac:link-body>([\s\S]*?)<\/ac:link-body>)?\s*<\/ac:link>/gi,
+    (_m, _linkAttrs, filename, body) => {
+      const text = body?.replace(/<[^>]+>/g, '').trim() || filename;
+      const vaultPath = options.attachmentMap?.get(filename);
+      const target = vaultPath || filename;
+      if (wikiLinks) {
+        return `[[${target}|${text}]]`;
+      } else {
+        return `[${text}](${target})`;
+      }
+    }
+  );
 
   // ── External URL link ─────────────────────────────────────────────────────
   s = s.replace(
