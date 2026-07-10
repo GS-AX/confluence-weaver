@@ -40,11 +40,31 @@ export class ConfluenceClient {
     await this.get<unknown>('/rest/api/space?limit=1');
   }
 
-  async searchCQL(cql: string, limit = 50): Promise<ConfluencePage[]> {
+  async searchCQL(
+    cql: string,
+    limit = 50,
+    expand = 'version,space,ancestors'
+  ): Promise<ConfluencePage[]> {
     const data = await this.get<{ results: ConfluencePage[] }>(
-      `/rest/api/content/search?cql=${encodeURIComponent(cql)}&limit=${limit}&expand=version,space,ancestors`
+      `/rest/api/content/search?cql=${encodeURIComponent(cql)}&limit=${limit}&expand=${encodeURIComponent(expand)}`
     );
     return data.results ?? [];
+  }
+
+  async getPages(
+    ids: string[],
+    expand = 'body.storage,version,ancestors,space,metadata.labels,history'
+  ): Promise<ConfluencePage[]> {
+    if (ids.length === 0) return [];
+    const batchSize = 50;
+    const pages: ConfluencePage[] = [];
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batchIds = ids.slice(i, i + batchSize);
+      const cql = `id in (${batchIds.map(id => `"${id}"`).join(',')})`;
+      const results = await this.searchCQL(cql, batchIds.length, expand);
+      pages.push(...results);
+    }
+    return pages;
   }
 
   async getPage(id: string): Promise<ConfluencePage> {
